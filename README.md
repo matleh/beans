@@ -32,13 +32,15 @@ Now initialize Beans in your project:
 beans init
 ```
 
-Get a list of available commands:
+This will create a `.beans/` directory in your project alongside a `beans.toml` configuration file. Everything inside this directory is meant to be tracked in your version control system.
+
+You can interact with your Beans through the `beans` CLI. To get a list of available commands:
 
 ```bash
 beans help
 ```
 
-But more importantly, get your coding agent set up to use Beans!
+But more importantly, you'll want to get your coding agent set up to use it. Let's dive in!
 
 ## Agent Configuration
 
