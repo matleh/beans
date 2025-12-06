@@ -32,3 +32,7 @@ All commands support --json for machine-readable output. Use this flag to parse 
 - When creating new beans, include a useful description. If you're not sure what to write, ask the user.
 - Make the description as detailed as possible, similar to a plan that you would create for yourself.
 - If possible, split the work into a checklist of GitHub-Formatted-Markdown tasks. Use a `## Checklist` header to precede it.
+
+## Cleaning up beans
+
+- `beans archive` will archive (delete) beans marked as done.
