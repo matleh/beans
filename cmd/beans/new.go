@@ -26,7 +26,7 @@ var (
 var validStatuses = map[string]bool{
 	"open":        true,
 	"in-progress": true,
-	"closed":      true,
+	"done":        true,
 }
 
 var newCmd = &cobra.Command{
@@ -40,9 +40,9 @@ var newCmd = &cobra.Command{
 		// Validate status if provided
 		if status != "" && !validStatuses[status] {
 			if newJSON {
-				return output.Error(output.ErrInvalidStatus, fmt.Sprintf("invalid status: %s (must be open, in-progress, or closed)", status))
+				return output.Error(output.ErrInvalidStatus, fmt.Sprintf("invalid status: %s (must be open, in-progress, or done)", status))
 			}
-			return fmt.Errorf("invalid status: %s (must be open, in-progress, or closed)", status)
+			return fmt.Errorf("invalid status: %s (must be open, in-progress, or done)", status)
 		}
 		if status == "" {
 			status = "open"
@@ -74,7 +74,7 @@ var newCmd = &cobra.Command{
 						Options(
 							huh.NewOption("Open", "open"),
 							huh.NewOption("In Progress", "in-progress"),
-							huh.NewOption("Closed", "closed"),
+							huh.NewOption("Done", "done"),
 						).
 						Value(&status),
 				),
@@ -166,7 +166,7 @@ func resolveBody(body, bodyFile string) (string, error) {
 }
 
 func init() {
-	newCmd.Flags().StringVarP(&newStatus, "status", "s", "", "Initial status (open, in-progress, closed)")
+	newCmd.Flags().StringVarP(&newStatus, "status", "s", "", "Initial status (open, in-progress, done)")
 	newCmd.Flags().StringVarP(&newBody, "body", "b", "", "Body content (use '-' to read from stdin)")
 	newCmd.Flags().StringVar(&newBodyFile, "body-file", "", "Read body from file")
 	newCmd.Flags().BoolVar(&newNoEdit, "no-edit", false, "Skip opening $EDITOR")

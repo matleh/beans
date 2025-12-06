@@ -20,7 +20,7 @@ var (
 			Padding(0, 1).
 			Bold(true)
 
-	StatusClosed = lipgloss.NewStyle().
+	StatusDone = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#fff")).
 			Background(ColorSecondary).
 			Padding(0, 1)
@@ -35,7 +35,7 @@ var (
 // Status text styles (for table use, no background/padding)
 var (
 	StatusOpenText       = lipgloss.NewStyle().Foreground(ColorSuccess).Bold(true)
-	StatusClosedText     = lipgloss.NewStyle().Foreground(ColorSecondary)
+	StatusDoneText       = lipgloss.NewStyle().Foreground(ColorSecondary)
 	StatusInProgressText = lipgloss.NewStyle().Foreground(ColorWarning).Bold(true)
 )
 
@@ -72,8 +72,8 @@ func RenderStatus(status string) string {
 	switch status {
 	case "open":
 		return StatusOpen.Render(status)
-	case "closed":
-		return StatusClosed.Render(status)
+	case "done":
+		return StatusDone.Render(status)
 	case "in-progress", "in_progress":
 		return StatusInProgress.Render(status)
 	default:
@@ -86,8 +86,8 @@ func RenderStatusText(status string) string {
 	switch status {
 	case "open":
 		return StatusOpenText.Render(status)
-	case "closed":
-		return StatusClosedText.Render(status)
+	case "done":
+		return StatusDoneText.Render(status)
 	case "in-progress", "in_progress":
 		return StatusInProgressText.Render("in-progress")
 	default:
