@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//go:embed agent_prompt.md
+//go:embed prompt.md
 var agentPrompt string
 
 var promptCmd = &cobra.Command{
