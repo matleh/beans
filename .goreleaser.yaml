@@ -50,6 +50,14 @@ changelog:
       - "^docs:"
       - "^test:"
 
+brews:
+  - repository:
+      owner: hmans
+      name: homebrew-beans
+    homepage: "https://github.com/hmans/beans"
+    description: "Agentic-first issue tracker"
+    license: "Apache-2.0"
+
 release:
   footer: >-
 

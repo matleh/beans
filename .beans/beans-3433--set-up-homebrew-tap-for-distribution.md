@@ -1,8 +1,8 @@
 ---
 title: Set up Homebrew tap for distribution
-status: open
+status: done
 created_at: 2025-12-06T16:31:34Z
-updated_at: 2025-12-06T16:31:34Z
+updated_at: 2025-12-06T16:48:26Z
 ---
 
 ## Summary
@@ -24,7 +24,7 @@ brews:
       name: homebrew-beans
     homepage: "https://github.com/hmans/beans"
     description: "Agentic-first issue tracker"
-    license: "MIT"  # adjust as needed
+    license: "MIT" # adjust as needed
 ```
 
 ### 3. Configure GitHub Token
