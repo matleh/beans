@@ -20,9 +20,22 @@ This is going to be a small CLI app that interacts with a .beans/ directory that
 - Each bean is a markdown file with front matter.
 - The front matter contains metadata about the bean, including:
   - `title`: a human-readable, one-line title for the bean
-  - `status`: the current status of the bean (e.g., `open`, `in-progress`, `done`)
+  - `status`: one of `open`, `in-progress`, or `done`
   - `created_at`: timestamp of when the bean was created
   - `updated_at`: timestamp of the last update to the bean
+
+# CLI Commands
+
+- `beans init` - Initialize a `.beans/` directory
+- `beans list` - List all beans
+- `beans show <id>` - Show a bean's contents
+- `beans create "Title"` - Create a new bean (supports `-d`, `-s`, `--no-edit` flags)
+- `beans status <id> <status>` - Change a bean's status
+- `beans delete <id>` - Delete a bean
+- `beans archive` - Delete all beans with status `done`
+- `beans prompt` - Output instructions for AI coding agents
+
+All commands support `--json` for machine-readable output.
 
 # Building
 
