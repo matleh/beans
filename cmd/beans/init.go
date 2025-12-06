@@ -33,9 +33,10 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize: %w", err)
 		}
 
-		// Create default config file
+		// Create default config file with directory name as prefix
 		beansDir := filepath.Join(dir, ".beans")
-		defaultCfg := config.Default()
+		dirName := filepath.Base(dir)
+		defaultCfg := config.DefaultWithPrefix(dirName + "-")
 		if err := defaultCfg.Save(beansDir); err != nil {
 			if initJSON {
 				return output.Error(output.ErrFileError, err.Error())

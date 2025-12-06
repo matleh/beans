@@ -86,7 +86,7 @@ var createCmd = &cobra.Command{
 		}
 
 		b := &bean.Bean{
-			ID:     bean.NewID(),
+			ID:     bean.NewID(cfg.Beans.Prefix),
 			Slug:   bean.Slugify(title),
 			Title:  title,
 			Status: status,
@@ -95,7 +95,7 @@ var createCmd = &cobra.Command{
 
 		// Set path if provided
 		if createPath != "" {
-			b.Path = createPath + "/" + b.ID + "-" + b.Slug + ".md"
+			b.Path = createPath + "/" + bean.BuildFilename(b.ID, b.Slug)
 		}
 
 		if err := store.Save(b); err != nil {

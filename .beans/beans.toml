@@ -1,3 +1,6 @@
+[beans]
+prefix = ""
+
 [statuses]
 available = ["open", "in-progress", "done"]
 default = "open"

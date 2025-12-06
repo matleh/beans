@@ -13,22 +13,36 @@ const (
 	idLength   = 3
 )
 
-// NewID generates a new NanoID for a bean.
-func NewID() string {
+// NewID generates a new NanoID for a bean with an optional prefix.
+func NewID(prefix string) string {
 	id, err := gonanoid.Generate(idAlphabet, idLength)
 	if err != nil {
 		panic(err) // should never happen with valid alphabet
 	}
-	return id
+	return prefix + id
 }
 
 // ParseFilename extracts the ID and optional slug from a bean filename.
-// Examples: "f7g.md" -> ("f7g", ""), "f7g-user-registration.md" -> ("f7g", "user-registration")
+// Supports multiple formats for backward compatibility:
+//   - New format: "f7g--user-registration.md" -> ("f7g", "user-registration")
+//   - Dot format: "f7g.user-registration.md" -> ("f7g", "user-registration")
+//   - Legacy format: "f7g-user-registration.md" -> ("f7g", "user-registration")
+//   - ID only: "f7g.md" -> ("f7g", "")
 func ParseFilename(name string) (id, slug string) {
 	// Remove .md extension
 	name = strings.TrimSuffix(name, ".md")
 
-	// Split on first dash
+	// Try new format first (double-dash separator): id--slug
+	if idx := strings.Index(name, "--"); idx > 0 {
+		return name[:idx], name[idx+2:]
+	}
+
+	// Try dot format: id.slug
+	if idx := strings.Index(name, "."); idx > 0 {
+		return name[:idx], name[idx+1:]
+	}
+
+	// Fall back to original legacy format (single dash separator): id-slug
 	parts := strings.SplitN(name, "-", 2)
 	id = parts[0]
 	if len(parts) > 1 {
@@ -38,11 +52,12 @@ func ParseFilename(name string) (id, slug string) {
 }
 
 // BuildFilename constructs a filename from ID and optional slug.
+// Uses double-dash separator: id--slug.md
 func BuildFilename(id, slug string) string {
 	if slug == "" {
 		return id + ".md"
 	}
-	return id + "-" + slug + ".md"
+	return id + "--" + slug + ".md"
 }
 
 // Slugify converts a title to a URL-friendly slug.

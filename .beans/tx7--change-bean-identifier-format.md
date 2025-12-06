@@ -1,9 +1,11 @@
 ---
 title: Change bean identifier format
-status: open
+status: done
 created_at: 2025-12-06T15:05:31Z
-updated_at: 2025-12-06T15:05:31Z
+updated_at: 2025-12-06T15:10:42Z
 ---
+
+
 
 Change how bean identifiers work:
 

@@ -11,7 +11,13 @@ const ConfigFile = "beans.toml"
 
 // Config holds the beans configuration.
 type Config struct {
+	Beans    BeansConfig  `toml:"beans"`
 	Statuses StatusConfig `toml:"statuses"`
+}
+
+// BeansConfig defines settings for bean creation.
+type BeansConfig struct {
+	Prefix string `toml:"prefix"`
 }
 
 // StatusConfig defines available statuses and the default.
@@ -23,11 +29,21 @@ type StatusConfig struct {
 // Default returns a Config with default values.
 func Default() *Config {
 	return &Config{
+		Beans: BeansConfig{
+			Prefix: "",
+		},
 		Statuses: StatusConfig{
 			Available: []string{"open", "in-progress", "done"},
 			Default:   "open",
 		},
 	}
+}
+
+// DefaultWithPrefix returns a Config with the given prefix.
+func DefaultWithPrefix(prefix string) *Config {
+	cfg := Default()
+	cfg.Beans.Prefix = prefix
+	return cfg
 }
 
 // Load reads configuration from the given .beans directory.
