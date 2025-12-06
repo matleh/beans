@@ -1,4 +1,4 @@
-<img alt="BEANS" src="https://github.com/user-attachments/assets/ab0d1491-b5f8-4d3e-8635-57d9ca08b347" />
+![beans](https://github.com/user-attachments/assets/776f094c-f2c4-4724-9a0b-5b87e88bc50d)
 
 **Beans is an issue tracker for you, your team, and your coding agents.** Instead of tracking tasks in a separate application, Beans stores them right alongside your code. You can use the `beans` CLI to interact with your tasks, but more importantly, so can your favorite coding agent!
 
