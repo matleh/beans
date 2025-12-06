@@ -1,6 +1,7 @@
 package bean
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -331,4 +332,44 @@ func TestParseRenderRoundtrip(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBeanJSONSerialization(t *testing.T) {
+	t.Run("body omitted when empty", func(t *testing.T) {
+		bean := &Bean{
+			ID:     "test-123",
+			Title:  "Test Bean",
+			Status: "open",
+			Body:   "",
+		}
+
+		data, err := json.Marshal(bean)
+		if err != nil {
+			t.Fatalf("failed to marshal: %v", err)
+		}
+
+		jsonStr := string(data)
+		if strings.Contains(jsonStr, `"body"`) {
+			t.Errorf("JSON should not contain 'body' field when empty, got: %s", jsonStr)
+		}
+	})
+
+	t.Run("body included when non-empty", func(t *testing.T) {
+		bean := &Bean{
+			ID:     "test-123",
+			Title:  "Test Bean",
+			Status: "open",
+			Body:   "This is the body content.",
+		}
+
+		data, err := json.Marshal(bean)
+		if err != nil {
+			t.Fatalf("failed to marshal: %v", err)
+		}
+
+		jsonStr := string(data)
+		if !strings.Contains(jsonStr, `"body":"This is the body content."`) {
+			t.Errorf("JSON should contain 'body' field with content, got: %s", jsonStr)
+		}
+	})
 }

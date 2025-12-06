@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	listJSON   bool
-	listStatus []string
-	listQuiet  bool
-	listSort   string
+	listJSON        bool
+	listStatus      []string
+	listQuiet       bool
+	listSort        string
+	listIncludeBody bool
 )
 
 var listCmd = &cobra.Command{
@@ -41,6 +42,11 @@ var listCmd = &cobra.Command{
 
 		// JSON output
 		if listJSON {
+			if !listIncludeBody {
+				for _, b := range beans {
+					b.Body = ""
+				}
+			}
 			return output.SuccessMultiple(beans)
 		}
 
@@ -197,6 +203,7 @@ func init() {
 	listCmd.Flags().StringArrayVarP(&listStatus, "status", "s", nil, "Filter by status (can be repeated)")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
 	listCmd.Flags().StringVar(&listSort, "sort", "status", "Sort by: created, updated, status, id (default: status)")
+	listCmd.Flags().BoolVar(&listIncludeBody, "include-body", false, "Include bean body in JSON output")
 	listCmd.MarkFlagsMutuallyExclusive("json", "quiet")
 	rootCmd.AddCommand(listCmd)
 }

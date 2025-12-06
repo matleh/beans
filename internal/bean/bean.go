@@ -27,7 +27,7 @@ type Bean struct {
 	UpdatedAt *time.Time `yaml:"updated_at,omitempty" json:"updated_at,omitempty"`
 
 	// Body is the markdown content after the front matter.
-	Body string `yaml:"-" json:"body"`
+	Body string `yaml:"-" json:"body,omitempty"`
 }
 
 // frontMatter is the subset of Bean that gets serialized to YAML front matter.
