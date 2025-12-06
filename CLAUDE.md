@@ -15,3 +15,12 @@ This is going to be a small CLI app that interacts with a .beans/ directory that
 
 - ONLY make commits when I explicitly tell you to do so.
 - When making commits, provide a meaningful commit message. The description should be a concise bullet point list of changes made.
+
+# Bean structure
+
+- Each bean is a markdown file with front matter.
+- The front matter contains metadata about the bean, including:
+  - `title`: a human-readable, one-line title for the bean
+  - `status`: the current status of the bean (e.g., `open`, `in-progress`, `done`)
+  - `created_at`: timestamp of when the bean was created
+  - `updated_at`: timestamp of the last update to the bean
