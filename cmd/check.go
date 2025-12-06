@@ -1,4 +1,4 @@
-package beans
+package cmd
 
 import (
 	"encoding/json"

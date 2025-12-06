@@ -22,9 +22,9 @@ builds:
       - darwin
     ldflags:
       - -s -w
-      - -X hmans.dev/beans/cmd/beans.version={{.Version}}
-      - -X hmans.dev/beans/cmd/beans.commit={{.ShortCommit}}
-      - -X hmans.dev/beans/cmd/beans.date={{.Date}}
+      - -X hmans.dev/beans/cmd.version={{.Version}}
+      - -X hmans.dev/beans/cmd.commit={{.ShortCommit}}
+      - -X hmans.dev/beans/cmd.date={{.Date}}
 
 archives:
   - formats: [tar.gz]
