@@ -111,8 +111,8 @@ func (s *Store) FindByID(idPrefix string) (*Bean, error) {
 
 // Save writes a bean to disk.
 func (s *Store) Save(bean *Bean) error {
-	// Set timestamps
-	now := time.Now().UTC()
+	// Set timestamps (truncate to second precision)
+	now := time.Now().UTC().Truncate(time.Second)
 	if bean.CreatedAt == nil {
 		bean.CreatedAt = &now
 	}
