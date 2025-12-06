@@ -11,7 +11,7 @@ All commands support --json for machine-readable output. Use this flag to parse 
 - Use `beans create` to create issues, not TodoWrite tool
 - Never interact with the data inside the `.beans/` directory directly, except for updating an existing bean.
 - After compaction or clear, run `beans prompt` to re-sync
-- When completing work, mark the bean as done using `beans status <bean-id> done`. If you're about to create a commit, do this first.
+- When completing work, mark the bean as done using `beans update <bean-id> --status done`. If you're about to create a commit, do this first.
 - Lean towards using sub-agents for interacting with beans
 
 ## Finding work
@@ -20,8 +20,8 @@ All commands support --json for machine-readable output. Use this flag to parse 
 
 ## Working on a bean
 
-- `bean status <bean-id> in-progress` to mark a bean as in-progress
-- `bean show <bean-id>` to see details about a bean
+- `beans update <bean-id> --status in-progress` to mark a bean as in-progress
+- `beans show <bean-id>` to see details about a bean
 - Adhere to the instructions in the bean's descriptions when working on it
 
 ## Creating new beans
