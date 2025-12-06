@@ -1,7 +1,7 @@
 package main
 
-import "hmans.dev/beans/cmd"
+import "hmans.dev/beans/cmd/beans"
 
 func main() {
-	cmd.Execute()
+	beans.Execute()
 }

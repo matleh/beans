@@ -1,0 +1,72 @@
+package bean
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+
+	"github.com/adrg/frontmatter"
+	"gopkg.in/yaml.v3"
+)
+
+// Bean represents an issue stored as a markdown file with front matter.
+type Bean struct {
+	// ID is the unique NanoID identifier (from filename).
+	ID string `yaml:"-"`
+	// Slug is the optional human-readable part of the filename.
+	Slug string `yaml:"-"`
+	// Path is the relative path from .beans/ root (e.g., "epic-auth/abc123-login.md").
+	Path string `yaml:"-"`
+
+	// Front matter fields
+	Title  string `yaml:"title"`
+	Status string `yaml:"status"`
+
+	// Body is the markdown content after the front matter.
+	Body string `yaml:"-"`
+}
+
+// frontMatter is the subset of Bean that gets serialized to YAML front matter.
+type frontMatter struct {
+	Title  string `yaml:"title"`
+	Status string `yaml:"status"`
+}
+
+// Parse reads a bean from a reader (markdown with YAML front matter).
+func Parse(r io.Reader) (*Bean, error) {
+	var fm frontMatter
+	body, err := frontmatter.Parse(r, &fm)
+	if err != nil {
+		return nil, fmt.Errorf("parsing front matter: %w", err)
+	}
+
+	return &Bean{
+		Title:  fm.Title,
+		Status: fm.Status,
+		Body:   string(body),
+	}, nil
+}
+
+// Render serializes the bean back to markdown with YAML front matter.
+func (b *Bean) Render() ([]byte, error) {
+	fm := frontMatter{
+		Title:  b.Title,
+		Status: b.Status,
+	}
+
+	fmBytes, err := yaml.Marshal(&fm)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling front matter: %w", err)
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("---\n")
+	buf.Write(fmBytes)
+	buf.WriteString("---\n")
+	if b.Body != "" {
+		buf.WriteString("\n")
+		buf.WriteString(b.Body)
+	}
+
+	return buf.Bytes(), nil
+}
