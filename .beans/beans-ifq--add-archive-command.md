@@ -1,16 +1,14 @@
 ---
 title: Add archive command
-status: open
+status: done
 ---
 
-Add a `beans archive` command to move completed beans to an archive folder instead of deleting them.
+Add a `beans archive` command.
 
 Implementation:
-- `beans archive <id>` moves a bean to `.beans/_archive/`
-- `beans archive --all-done` archives all beans with status 'done'
-- `beans list` excludes archived beans by default
-- `beans list --archived` shows only archived beans
-- `beans unarchive <id>` moves a bean back from archive
-- Support `--json` output
+
+- Deletes all beans that have their status set to "done".
+- Show the number of beans that are going to be deleted, and ask the user for confirmation.
+- If the `--force` flag is provided, skip the confirmation step.
 
 This keeps the main bean list clean while preserving history.
