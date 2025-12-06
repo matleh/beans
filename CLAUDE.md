@@ -56,7 +56,7 @@ Colors can be named (`green`, `yellow`, `red`, `gray`, `blue`, `purple`) or hex 
 - `beans list` - List all beans
 - `beans show <id>` - Show a bean's contents
 - `beans create "Title"` - Create a new bean (supports `-d`, `-s`, `--no-edit` flags)
-- `beans status <id> <status>` - Change a bean's status
+- `beans update <id>` - Update a bean (supports `--status`, `--title`, `--description`, `--no-edit` flags)
 - `beans delete <id>` - Delete a bean
 - `beans archive` - Delete all beans with an archive status (`archive = true`)
 - `beans check` - Validate `beans.toml` configuration

@@ -2,7 +2,6 @@ package beans
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -131,35 +130,6 @@ var createCmd = &cobra.Command{
 	},
 }
 
-// resolveContent returns content from a direct value or file flag.
-// If value is "-", reads from stdin.
-func resolveContent(value, file string) (string, error) {
-	if value != "" && file != "" {
-		return "", fmt.Errorf("cannot use both --description and --description-file")
-	}
-
-	if value == "-" {
-		data, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return "", fmt.Errorf("reading stdin: %w", err)
-		}
-		return string(data), nil
-	}
-
-	if value != "" {
-		return value, nil
-	}
-
-	if file != "" {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			return "", fmt.Errorf("reading file: %w", err)
-		}
-		return string(data), nil
-	}
-
-	return "", nil
-}
 
 // formatStatusLabel converts a status value to a display label.
 // e.g., "in-progress" -> "In Progress", "open" -> "Open"
