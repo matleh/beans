@@ -18,13 +18,7 @@ var archiveCmd = &cobra.Command{
 	Short: "Delete all beans with an archive status",
 	Long:  `Deletes all beans that have a status marked with archive=true in config.yaml. Asks for confirmation unless --force is provided.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		beans, err := store.FindAll()
-		if err != nil {
-			if archiveJSON {
-				return output.Error(output.ErrFileError, err.Error())
-			}
-			return fmt.Errorf("failed to list beans: %w", err)
-		}
+		beans := core.All()
 
 		// Find beans with any archive status
 		var archiveBeans []string
@@ -65,7 +59,7 @@ var archiveCmd = &cobra.Command{
 		// Delete all beans with archive status
 		var deleted []string
 		for _, id := range archiveBeans {
-			if err := store.Delete(id); err != nil {
+			if err := core.Delete(id); err != nil {
 				if archiveJSON {
 					return output.Error(output.ErrFileError, fmt.Sprintf("failed to delete bean %s: %s", id, err.Error()))
 				}

@@ -10,7 +10,7 @@ var tuiCmd = &cobra.Command{
 	Short: "Open the interactive TUI",
 	Long:  `Opens an interactive terminal user interface for browsing and managing beans.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return tui.Run(store, cfg)
+		return tui.Run(core, cfg)
 	},
 }
 

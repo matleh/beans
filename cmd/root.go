@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/beancore"
 	"hmans.dev/beans/internal/config"
 )
 
-var store *bean.Store
+var core *beancore.Core
 var cfg *config.Config
 var beansPath string
 
@@ -20,7 +20,7 @@ var rootCmd = &cobra.Command{
 Track your work alongside your code and supercharge your coding agent with
 a full view of your project.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		// Skip store initialization for init command
+		// Skip core initialization for init command
 		if cmd.Name() == "init" {
 			return nil
 		}
@@ -37,17 +37,20 @@ a full view of your project.`,
 			}
 		} else {
 			// Search upward for .beans directory
-			root, err = bean.FindRoot()
+			root, err = beancore.FindRoot()
 			if err != nil {
 				return fmt.Errorf("no .beans directory found (run 'beans init' to create one)")
 			}
 		}
 
-		store = bean.NewStore(root)
-
 		cfg, err = config.Load(root)
 		if err != nil {
 			return fmt.Errorf("loading config: %w", err)
+		}
+
+		core = beancore.New(root, cfg)
+		if err := core.Load(); err != nil {
+			return fmt.Errorf("loading beans: %w", err)
 		}
 
 		return nil

@@ -76,13 +76,7 @@ var listCmd = &cobra.Command{
 	Short:   "List all beans",
 	Long:    `Lists all beans in the .beans directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		beans, err := store.FindAll()
-		if err != nil {
-			if listJSON {
-				return output.Error(output.ErrFileError, err.Error())
-			}
-			return fmt.Errorf("failed to list beans: %w", err)
-		}
+		beans := core.All()
 
 		// Parse filter criteria once (avoid repeated string splitting)
 		linksFilters := parseLinkFilters(listLinks)

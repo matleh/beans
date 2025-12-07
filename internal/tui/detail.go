@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/beancore"
 	"hmans.dev/beans/internal/config"
 	"hmans.dev/beans/internal/ui"
 )
@@ -28,7 +29,7 @@ type resolvedLink struct {
 type detailModel struct {
 	viewport     viewport.Model
 	bean         *bean.Bean
-	store        *bean.Store
+	core         *beancore.Core
 	config       *config.Config
 	width        int
 	height       int
@@ -38,10 +39,10 @@ type detailModel struct {
 	linksActive  bool           // true = links section focused
 }
 
-func newDetailModel(b *bean.Bean, store *bean.Store, cfg *config.Config, width, height int) detailModel {
+func newDetailModel(b *bean.Bean, core *beancore.Core, cfg *config.Config, width, height int) detailModel {
 	m := detailModel{
 		bean:         b,
-		store:        store,
+		core:         core,
 		config:       cfg,
 		width:        width,
 		height:       height,
@@ -379,11 +380,8 @@ func (m detailModel) formatLinkLabel(linkType string, incoming bool) string {
 func (m detailModel) resolveAllLinks() []resolvedLink {
 	var links []resolvedLink
 
-	// Load all beans ONCE to avoid repeated disk reads
-	allBeans, err := m.store.FindAll()
-	if err != nil {
-		return links
-	}
+	// Get all beans from core (already in memory)
+	allBeans := m.core.All()
 
 	// Build a lookup map by ID for fast resolution
 	beansByID := make(map[string]*bean.Bean)

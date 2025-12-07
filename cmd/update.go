@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/beancore"
 	"hmans.dev/beans/internal/output"
 	"hmans.dev/beans/internal/ui"
 )
@@ -43,7 +43,7 @@ Relationship types: blocks, duplicates, parent, related`,
 		id := args[0]
 
 		// Find the bean
-		b, err := store.FindByID(id)
+		b, err := core.Get(id)
 		if err != nil {
 			if updateJSON {
 				return output.Error(output.ErrNotFound, err.Error())
@@ -116,7 +116,7 @@ Relationship types: blocks, duplicates, parent, related`,
 					return fmt.Errorf("%s", errMsg)
 				}
 				// Check if target bean exists
-				if _, err := store.FindByID(targetID); err != nil {
+				if _, err := core.Get(targetID); err != nil {
 					warnings = append(warnings, fmt.Sprintf("target bean '%s' does not exist", targetID))
 				}
 				b.Links = b.Links.Add(linkType, targetID)
@@ -148,7 +148,7 @@ Relationship types: blocks, duplicates, parent, related`,
 		}
 
 		// Save the bean
-		if err := store.Save(b); err != nil {
+		if err := core.Update(b); err != nil {
 			if updateJSON {
 				return output.Error(output.ErrFileError, err.Error())
 			}
@@ -174,7 +174,7 @@ Relationship types: blocks, duplicates, parent, related`,
 		if !updateNoEdit && !updateJSON {
 			editor := os.Getenv("EDITOR")
 			if editor != "" {
-				path := store.FullPath(b)
+				path := core.FullPath(b)
 				editorCmd := exec.Command(editor, path)
 				editorCmd.Stdin = os.Stdin
 				editorCmd.Stdout = os.Stdout
@@ -214,7 +214,7 @@ func parseLink(s string) (linkType, targetID string, err error) {
 
 // isKnownLinkType checks if a link type is recognized.
 func isKnownLinkType(linkType string) bool {
-	for _, t := range bean.KnownLinkTypes {
+	for _, t := range beancore.KnownLinkTypes {
 		if t == linkType {
 			return true
 		}

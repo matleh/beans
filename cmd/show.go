@@ -25,7 +25,7 @@ var showCmd = &cobra.Command{
 	Long:  `Displays the full contents of a bean, including front matter and body.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		b, err := store.FindByID(args[0])
+		b, err := core.Get(args[0])
 		if err != nil {
 			if showJSON {
 				return output.Error(output.ErrNotFound, err.Error())

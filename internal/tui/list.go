@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/beancore"
 	"hmans.dev/beans/internal/config"
 	"hmans.dev/beans/internal/ui"
 )
@@ -81,14 +82,14 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 // listModel is the model for the bean list view
 type listModel struct {
 	list   list.Model
-	store  *bean.Store
+	core   *beancore.Core
 	config *config.Config
 	width  int
 	height int
 	err    error
 }
 
-func newListModel(store *bean.Store, cfg *config.Config) listModel {
+func newListModel(core *beancore.Core, cfg *config.Config) listModel {
 	delegate := newItemDelegate(cfg)
 
 	l := list.New([]list.Item{}, delegate, 0, 0)
@@ -103,7 +104,7 @@ func newListModel(store *bean.Store, cfg *config.Config) listModel {
 
 	return listModel{
 		list:   l,
-		store:  store,
+		core:   core,
 		config: cfg,
 	}
 }
@@ -128,10 +129,8 @@ func (m listModel) Init() tea.Cmd {
 }
 
 func (m listModel) loadBeans() tea.Msg {
-	beans, err := m.store.FindAll()
-	if err != nil {
-		return errMsg{err}
-	}
+	// Core already has beans in memory, just return them
+	beans := m.core.All()
 	return beansLoadedMsg{beans}
 }
 

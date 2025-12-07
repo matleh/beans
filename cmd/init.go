@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/beancore"
 	"hmans.dev/beans/internal/config"
 	"hmans.dev/beans/internal/output"
 )
@@ -42,7 +42,7 @@ var initCmd = &cobra.Command{
 				return err
 			}
 
-			if err := bean.Init(dir); err != nil {
+			if err := beancore.Init(dir); err != nil {
 				if initJSON {
 					return output.Error(output.ErrFileError, err.Error())
 				}

@@ -107,7 +107,6 @@ var createCmd = &cobra.Command{
 		}
 
 		b := &bean.Bean{
-			ID:     bean.NewID(cfg.Beans.Prefix, cfg.Beans.IDLength),
 			Slug:   bean.Slugify(title),
 			Title:  title,
 			Status: status,
@@ -120,7 +119,7 @@ var createCmd = &cobra.Command{
 			b.Path = createPath + "/" + bean.BuildFilename(b.ID, b.Slug)
 		}
 
-		if err := store.Save(b); err != nil {
+		if err := core.Create(b); err != nil {
 			if createJSON {
 				return output.Error(output.ErrFileError, err.Error())
 			}
@@ -138,7 +137,7 @@ var createCmd = &cobra.Command{
 		if !createNoEdit && !createJSON {
 			editor := os.Getenv("EDITOR")
 			if editor != "" {
-				path := store.FullPath(b)
+				path := core.FullPath(b)
 				editorCmd := exec.Command(editor, path)
 				editorCmd.Stdin = os.Stdin
 				editorCmd.Stdout = os.Stdout

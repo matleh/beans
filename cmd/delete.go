@@ -22,7 +22,7 @@ var deleteCmd = &cobra.Command{
 	Long:    `Deletes a bean after confirmation (use -f to skip confirmation).`,
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		b, err := store.FindByID(args[0])
+		b, err := core.Get(args[0])
 		if err != nil {
 			if deleteJSON {
 				return output.Error(output.ErrNotFound, err.Error())
@@ -43,7 +43,7 @@ var deleteCmd = &cobra.Command{
 			}
 		}
 
-		if err := store.Delete(args[0]); err != nil {
+		if err := core.Delete(args[0]); err != nil {
 			if deleteJSON {
 				return output.Error(output.ErrFileError, err.Error())
 			}
