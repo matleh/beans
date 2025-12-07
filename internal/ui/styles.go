@@ -173,3 +173,63 @@ func RenderTypeText(typeName, color string) string {
 	c := ResolveColor(color)
 	return lipgloss.NewStyle().Foreground(c).Render(typeName)
 }
+
+// BeanRowConfig holds configuration for rendering a bean row
+type BeanRowConfig struct {
+	StatusColor    string
+	TypeColor      string
+	IsArchive      bool
+	MaxTitleWidth  int  // 0 means no truncation
+	ShowCursor     bool // Show selection cursor
+	IsSelected     bool
+}
+
+// Standard column widths for bean lists
+const (
+	ColWidthID     = 12
+	ColWidthStatus = 14
+	ColWidthType   = 12
+)
+
+// RenderBeanRow renders a bean as a single row with ID, Type, Status, Title
+func RenderBeanRow(id, status, typeName, title string, cfg BeanRowConfig) string {
+	// Column styles
+	idStyle := lipgloss.NewStyle().Width(ColWidthID)
+	typeStyle := lipgloss.NewStyle().Width(ColWidthType)
+	statusStyle := lipgloss.NewStyle().Width(ColWidthStatus)
+
+	// Build columns
+	idCol := idStyle.Render(ID.Render(id))
+
+	typeText := ""
+	if typeName != "" {
+		typeText = RenderTypeText(typeName, cfg.TypeColor)
+	}
+	typeCol := typeStyle.Render(typeText)
+
+	statusCol := statusStyle.Render(RenderStatusTextWithColor(status, cfg.StatusColor, cfg.IsArchive))
+
+	// Title (truncate if needed)
+	displayTitle := title
+	if cfg.MaxTitleWidth > 0 && len(title) > cfg.MaxTitleWidth {
+		displayTitle = title[:cfg.MaxTitleWidth-3] + "..."
+	}
+
+	// Cursor and title styling
+	var cursor string
+	var titleStyled string
+	if cfg.ShowCursor {
+		if cfg.IsSelected {
+			cursor = lipgloss.NewStyle().Foreground(ColorPrimary).Bold(true).Render("▌") + " "
+			titleStyled = lipgloss.NewStyle().Bold(true).Foreground(ColorPrimary).Render(displayTitle)
+		} else {
+			cursor = "  "
+			titleStyled = displayTitle
+		}
+	} else {
+		cursor = ""
+		titleStyled = displayTitle
+	}
+
+	return cursor + idCol + typeCol + statusCol + titleStyled
+}
