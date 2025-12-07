@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"sort"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"hmans.dev/beans/internal/beancore"
 	"hmans.dev/beans/internal/config"
@@ -12,22 +14,38 @@ type viewState int
 const (
 	viewList viewState = iota
 	viewDetail
+	viewTagPicker
 )
 
 // beansChangedMsg is sent when beans change on disk (via file watcher)
 type beansChangedMsg struct{}
 
+// openTagPickerMsg requests opening the tag picker
+type openTagPickerMsg struct{}
+
+// tagSelectedMsg is sent when a tag is selected from the picker
+type tagSelectedMsg struct {
+	tag string
+}
+
+// clearFilterMsg is sent to clear any active filter
+type clearFilterMsg struct{}
+
 // App is the main TUI application model
 type App struct {
-	state   viewState
-	list    listModel
-	detail  detailModel
-	history []detailModel // stack of previous detail views for back navigation
-	core    *beancore.Core
-	config  *config.Config
-	width   int
-	height  int
-	program *tea.Program // reference to program for sending messages from watcher
+	state     viewState
+	list      listModel
+	detail    detailModel
+	tagPicker tagPickerModel
+	history   []detailModel // stack of previous detail views for back navigation
+	core      *beancore.Core
+	config    *config.Config
+	width     int
+	height    int
+	program   *tea.Program // reference to program for sending messages from watcher
+
+	// Key chord state - tracks partial key sequences like "g" waiting for "t"
+	pendingKey string
 }
 
 // New creates a new TUI application
@@ -55,11 +73,36 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.height = msg.Height
 
 	case tea.KeyMsg:
+		// Handle key chord sequences
+		if a.state == viewList && a.list.list.FilterState() != 1 {
+			if a.pendingKey == "g" {
+				a.pendingKey = ""
+				switch msg.String() {
+				case "t":
+					// "g t" - go to tags
+					return a, func() tea.Msg { return openTagPickerMsg{} }
+				default:
+					// Invalid second key, ignore the chord
+				}
+				// Don't forward this key since it was part of a chord attempt
+				return a, nil
+			}
+
+			// Start of potential chord
+			if msg.String() == "g" {
+				a.pendingKey = "g"
+				return a, nil
+			}
+		}
+
+		// Clear pending key on any other key press
+		a.pendingKey = ""
+
 		switch msg.String() {
 		case "ctrl+c":
 			return a, tea.Quit
 		case "q":
-			if a.state == viewDetail {
+			if a.state == viewDetail || a.state == viewTagPicker {
 				return a, tea.Quit
 			}
 			// For list, only quit if not filtering
@@ -82,6 +125,26 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		// Trigger list refresh
+		return a, a.list.loadBeans
+
+	case openTagPickerMsg:
+		// Collect all unique tags from beans
+		tags := a.collectAllTags()
+		if len(tags) == 0 {
+			// No tags in system, don't open picker
+			return a, nil
+		}
+		a.tagPicker = newTagPickerModel(tags, a.width, a.height)
+		a.state = viewTagPicker
+		return a, a.tagPicker.Init()
+
+	case tagSelectedMsg:
+		a.state = viewList
+		a.list.setTagFilter(msg.tag)
+		return a, a.list.loadBeans
+
+	case clearFilterMsg:
+		a.list.clearFilter()
 		return a, a.list.loadBeans
 
 	case selectBeanMsg:
@@ -111,9 +174,29 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.list, cmd = a.list.Update(msg)
 	case viewDetail:
 		a.detail, cmd = a.detail.Update(msg)
+	case viewTagPicker:
+		a.tagPicker, cmd = a.tagPicker.Update(msg)
 	}
 
 	return a, cmd
+}
+
+// collectAllTags returns all unique tags across all beans, sorted alphabetically
+func (a *App) collectAllTags() []string {
+	tagSet := make(map[string]struct{})
+	for _, b := range a.core.All() {
+		for _, tag := range b.Tags {
+			tagSet[tag] = struct{}{}
+		}
+	}
+
+	tags := make([]string, 0, len(tagSet))
+	for tag := range tagSet {
+		tags = append(tags, tag)
+	}
+
+	sort.Strings(tags)
+	return tags
 }
 
 // View renders the current view
@@ -123,6 +206,8 @@ func (a *App) View() string {
 		return a.list.View()
 	case viewDetail:
 		return a.detail.View()
+	case viewTagPicker:
+		return a.tagPicker.View()
 	}
 	return ""
 }

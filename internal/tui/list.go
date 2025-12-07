@@ -97,6 +97,9 @@ type listModel struct {
 	err      error
 	hasTags  bool // whether any beans have tags
 	showTags bool // whether to show tags column (based on width)
+
+	// Active filters
+	tagFilter string // if set, only show beans with this tag
 }
 
 func newListModel(core *beancore.Core, cfg *config.Config) listModel {
@@ -139,9 +142,36 @@ func (m listModel) Init() tea.Cmd {
 }
 
 func (m listModel) loadBeans() tea.Msg {
-	// Core already has beans in memory, just return them
-	beans := m.core.All()
-	return beansLoadedMsg{beans}
+	// Core already has beans in memory
+	allBeans := m.core.All()
+
+	// Apply tag filter if set
+	if m.tagFilter != "" {
+		var filtered []*bean.Bean
+		for _, b := range allBeans {
+			if b.HasTag(m.tagFilter) {
+				filtered = append(filtered, b)
+			}
+		}
+		return beansLoadedMsg{filtered}
+	}
+
+	return beansLoadedMsg{allBeans}
+}
+
+// setTagFilter sets the tag filter
+func (m *listModel) setTagFilter(tag string) {
+	m.tagFilter = tag
+}
+
+// clearFilter clears all active filters
+func (m *listModel) clearFilter() {
+	m.tagFilter = ""
+}
+
+// hasActiveFilter returns true if any filter is active
+func (m *listModel) hasActiveFilter() bool {
+	return m.tagFilter != ""
 }
 
 // minWidthForTags is the minimum terminal width to show tags column
@@ -190,6 +220,13 @@ func (m listModel) Update(msg tea.Msg) (listModel, tea.Cmd) {
 						return selectBeanMsg{bean: item.bean}
 					}
 				}
+			case "esc", "backspace":
+				// If we have an active filter, clear it instead of quitting
+				if m.hasActiveFilter() {
+					return m, func() tea.Msg {
+						return clearFilterMsg{}
+					}
+				}
 			}
 		}
 	}
@@ -218,6 +255,13 @@ func (m listModel) View() string {
 		return "Loading..."
 	}
 
+	// Update title based on active filter
+	if m.tagFilter != "" {
+		m.list.Title = fmt.Sprintf("Beans [tag: %s]", m.tagFilter)
+	} else {
+		m.list.Title = "Beans"
+	}
+
 	// Simple bordered container
 	border := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -227,10 +271,18 @@ func (m listModel) View() string {
 
 	content := border.Render(m.list.View())
 
-	// Footer
-	help := helpKeyStyle.Render("enter") + " " + helpStyle.Render("view") + "  " +
-		helpKeyStyle.Render("/") + " " + helpStyle.Render("filter") + "  " +
-		helpKeyStyle.Render("q") + " " + helpStyle.Render("quit")
+	// Footer - show different help based on filter state
+	var help string
+	if m.hasActiveFilter() {
+		help = helpKeyStyle.Render("enter") + " " + helpStyle.Render("view") + "  " +
+			helpKeyStyle.Render("esc") + " " + helpStyle.Render("clear filter") + "  " +
+			helpKeyStyle.Render("q") + " " + helpStyle.Render("quit")
+	} else {
+		help = helpKeyStyle.Render("enter") + " " + helpStyle.Render("view") + "  " +
+			helpKeyStyle.Render("/") + " " + helpStyle.Render("filter") + "  " +
+			helpKeyStyle.Render("g t") + " " + helpStyle.Render("filter by tag") + "  " +
+			helpKeyStyle.Render("q") + " " + helpStyle.Render("quit")
+	}
 
 	return content + "\n" + help
 }
