@@ -1,12 +1,12 @@
 ---
 title: Add labels field
-status: open
+status: done
 type: feature
 tags:
     - schema
     - cli
 created_at: 2025-12-06T22:04:39Z
-updated_at: 2025-12-07T19:00:57Z
+updated_at: 2025-12-07T21:57:24Z
 links:
     - parent: beans-v8qj
     - parent: beans-7lmv
