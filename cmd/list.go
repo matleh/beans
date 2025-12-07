@@ -44,7 +44,7 @@ var listCmd = &cobra.Command{
 		if listJSON {
 			if !listFull {
 				for _, b := range beans {
-					b.Description = ""
+					b.Body = ""
 				}
 			}
 			return output.SuccessMultiple(beans)
@@ -203,7 +203,7 @@ func init() {
 	listCmd.Flags().StringArrayVarP(&listStatus, "status", "s", nil, "Filter by status (can be repeated)")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
 	listCmd.Flags().StringVar(&listSort, "sort", "status", "Sort by: created, updated, status, id (default: status)")
-	listCmd.Flags().BoolVar(&listFull, "full", false, "Include bean description in JSON output")
+	listCmd.Flags().BoolVar(&listFull, "full", false, "Include bean body in JSON output")
 	listCmd.MarkFlagsMutuallyExclusive("json", "quiet")
 	rootCmd.AddCommand(listCmd)
 }

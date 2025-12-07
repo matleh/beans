@@ -26,8 +26,8 @@ type Bean struct {
 	CreatedAt *time.Time `yaml:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt *time.Time `yaml:"updated_at,omitempty" json:"updated_at,omitempty"`
 
-	// Description is the markdown content after the front matter.
-	Description string `yaml:"-" json:"description,omitempty"`
+	// Body is the markdown content after the front matter.
+	Body string `yaml:"-" json:"body,omitempty"`
 }
 
 // frontMatter is the subset of Bean that gets serialized to YAML front matter.
@@ -53,7 +53,7 @@ func Parse(r io.Reader) (*Bean, error) {
 		Type:        fm.Type,
 		CreatedAt:   fm.CreatedAt,
 		UpdatedAt:   fm.UpdatedAt,
-		Description: string(body),
+		Body: string(body),
 	}, nil
 }
 
@@ -76,9 +76,9 @@ func (b *Bean) Render() ([]byte, error) {
 	buf.WriteString("---\n")
 	buf.Write(fmBytes)
 	buf.WriteString("---\n")
-	if b.Description != "" {
+	if b.Body != "" {
 		buf.WriteString("\n")
-		buf.WriteString(b.Description)
+		buf.WriteString(b.Body)
 	}
 
 	return buf.Bytes(), nil

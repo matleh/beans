@@ -12,15 +12,15 @@ import (
 )
 
 var (
-	showJSON            bool
-	showRaw             bool
-	showDescriptionOnly bool
+	showJSON     bool
+	showRaw      bool
+	showBodyOnly bool
 )
 
 var showCmd = &cobra.Command{
 	Use:   "show <id>",
 	Short: "Show a bean's contents",
-	Long:  `Displays the full contents of a bean, including front matter and description.`,
+	Long:  `Displays the full contents of a bean, including front matter and body.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b, err := store.FindByID(args[0])
@@ -46,9 +46,9 @@ var showCmd = &cobra.Command{
 			return nil
 		}
 
-		// Description only (no header, no styling)
-		if showDescriptionOnly {
-			fmt.Print(b.Description)
+		// Body only (no header, no styling)
+		if showBodyOnly {
+			fmt.Print(b.Body)
 			return nil
 		}
 
@@ -75,8 +75,8 @@ var showCmd = &cobra.Command{
 
 		fmt.Println(headerBox)
 
-		// Render the description with Glamour
-		if b.Description != "" {
+		// Render the body with Glamour
+		if b.Body != "" {
 			renderer, err := glamour.NewTermRenderer(
 				glamour.WithAutoStyle(),
 				glamour.WithWordWrap(80),
@@ -85,7 +85,7 @@ var showCmd = &cobra.Command{
 				return fmt.Errorf("failed to create renderer: %w", err)
 			}
 
-			rendered, err := renderer.Render(b.Description)
+			rendered, err := renderer.Render(b.Body)
 			if err != nil {
 				return fmt.Errorf("failed to render markdown: %w", err)
 			}
@@ -100,7 +100,7 @@ var showCmd = &cobra.Command{
 func init() {
 	showCmd.Flags().BoolVar(&showJSON, "json", false, "Output as JSON")
 	showCmd.Flags().BoolVar(&showRaw, "raw", false, "Output raw markdown without styling")
-	showCmd.Flags().BoolVar(&showDescriptionOnly, "description-only", false, "Output only the description content")
-	showCmd.MarkFlagsMutuallyExclusive("json", "raw", "description-only")
+	showCmd.Flags().BoolVar(&showBodyOnly, "body-only", false, "Output only the body content")
+	showCmd.MarkFlagsMutuallyExclusive("json", "raw", "body-only")
 	rootCmd.AddCommand(showCmd)
 }

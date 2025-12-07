@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	updateStatus          string
-	updateType            string
-	updateTitle           string
-	updateDescription     string
-	updateDescriptionFile string
-	updateNoEdit          bool
-	updateJSON            bool
+	updateStatus   string
+	updateType     string
+	updateTitle    string
+	updateBody     string
+	updateBodyFile string
+	updateNoEdit   bool
+	updateJSON     bool
 )
 
 var updateCmd = &cobra.Command{
@@ -26,10 +26,10 @@ var updateCmd = &cobra.Command{
 	Long: `Updates one or more properties of an existing bean.
 
 Use flags to specify which properties to update:
-  --status        Change the status
-  --type          Change the type
-  --title         Change the title
-  --description   Change the description (use '-' to read from stdin)`,
+  --status   Change the status
+  --type     Change the type
+  --title    Change the title
+  --body     Change the body (use '-' to read from stdin)`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
@@ -76,17 +76,17 @@ Use flags to specify which properties to update:
 			changes = append(changes, "title")
 		}
 
-		// Update description if provided
-		if cmd.Flags().Changed("description") || cmd.Flags().Changed("description-file") {
-			body, err := resolveContent(updateDescription, updateDescriptionFile)
+		// Update body if provided
+		if cmd.Flags().Changed("body") || cmd.Flags().Changed("body-file") {
+			body, err := resolveContent(updateBody, updateBodyFile)
 			if err != nil {
 				if updateJSON {
 					return output.Error(output.ErrFileError, err.Error())
 				}
 				return err
 			}
-			b.Description = body
-			changes = append(changes, "description")
+			b.Body = body
+			changes = append(changes, "body")
 		}
 
 		// Check if anything was changed
@@ -94,7 +94,7 @@ Use flags to specify which properties to update:
 			if updateJSON {
 				return output.Error(output.ErrValidation, "no changes specified")
 			}
-			return fmt.Errorf("no changes specified (use --status, --type, --title, or --description)")
+			return fmt.Errorf("no changes specified (use --status, --type, --title, or --body)")
 		}
 
 		// Save the bean
@@ -135,10 +135,10 @@ func init() {
 	updateCmd.Flags().StringVarP(&updateStatus, "status", "s", "", "New status")
 	updateCmd.Flags().StringVar(&updateType, "type", "", "New type (e.g., task, bug, epic)")
 	updateCmd.Flags().StringVarP(&updateTitle, "title", "t", "", "New title")
-	updateCmd.Flags().StringVarP(&updateDescription, "description", "d", "", "New description (use '-' to read from stdin)")
-	updateCmd.Flags().StringVar(&updateDescriptionFile, "description-file", "", "Read description from file")
+	updateCmd.Flags().StringVarP(&updateBody, "body", "d", "", "New body (use '-' to read from stdin)")
+	updateCmd.Flags().StringVar(&updateBodyFile, "body-file", "", "Read body from file")
 	updateCmd.Flags().BoolVar(&updateNoEdit, "no-edit", false, "Skip opening $EDITOR")
 	updateCmd.Flags().BoolVar(&updateJSON, "json", false, "Output as JSON")
-	updateCmd.MarkFlagsMutuallyExclusive("description", "description-file")
+	updateCmd.MarkFlagsMutuallyExclusive("body", "body-file")
 	rootCmd.AddCommand(updateCmd)
 }

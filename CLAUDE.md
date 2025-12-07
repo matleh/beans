@@ -31,9 +31,9 @@ The `.beans/config.yaml` file configures the project:
 
 ```yaml
 beans:
-  prefix: myapp-         # prefix for generated IDs
-  id_length: 4           # length of the random ID portion
-  default_status: open   # status for new beans
+  prefix: myapp- # prefix for generated IDs
+  id_length: 4 # length of the random ID portion
+  default_status: open # status for new beans
 
 statuses:
   - name: open
@@ -42,7 +42,7 @@ statuses:
     color: yellow
   - name: done
     color: gray
-    archive: true        # cleaned up by `beans archive`
+    archive: true # cleaned up by `beans archive`
 ```
 
 Colors can be named (`green`, `yellow`, `red`, `gray`, `blue`, `purple`) or hex codes (`#FF6B6B`).
@@ -53,7 +53,7 @@ Colors can be named (`green`, `yellow`, `red`, `gray`, `blue`, `purple`) or hex 
 - `beans list` - List all beans
 - `beans show <id>` - Show a bean's contents
 - `beans create "Title"` - Create a new bean (supports `-d`, `-s`, `--no-edit` flags)
-- `beans update <id>` - Update a bean (supports `--status`, `--title`, `--description`, `--no-edit` flags)
+- `beans update <id>` - Update a bean (supports `--status`, `--title`, `--body`, `--no-edit` flags)
 - `beans delete <id>` - Delete a bean
 - `beans archive` - Delete all beans with an archive status (`archive = true`)
 - `beans check` - Validate `config.yaml` configuration
