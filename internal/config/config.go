@@ -19,11 +19,11 @@ var DefaultStatuses = []StatusConfig{
 
 // DefaultTypes defines the default type configuration.
 var DefaultTypes = []TypeConfig{
-	{Name: "task", Color: "blue"},
-	{Name: "feature", Color: "green"},
-	{Name: "bug", Color: "red"},
+	{Name: "idea", Color: "yellow"},
 	{Name: "epic", Color: "purple"},
-	{Name: "idea", Color: "cyan"},
+	{Name: "bug", Color: "red"},
+	{Name: "feature", Color: "green"},
+	{Name: "task", Color: "blue"},
 }
 
 // StatusConfig defines a single status with its display color.

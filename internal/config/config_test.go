@@ -307,7 +307,7 @@ func TestIsValidType(t *testing.T) {
 func TestTypeList(t *testing.T) {
 	cfg := Default()
 	got := cfg.TypeList()
-	want := "task, feature, bug, epic, idea"
+	want := "idea, epic, bug, feature, task"
 
 	if got != want {
 		t.Errorf("TypeList() = %q, want %q", got, want)

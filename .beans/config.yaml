@@ -11,13 +11,13 @@ statuses:
       color: gray
       archive: true
 types:
-    - name: task
-      color: blue
-    - name: feature
-      color: green
-    - name: bug
-      color: red
+    - name: idea
+      color: yellow
     - name: epic
       color: purple
-    - name: idea
-      color: cyan
+    - name: bug
+      color: red
+    - name: feature
+      color: green
+    - name: task
+      color: blue

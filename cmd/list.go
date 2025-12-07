@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/config"
 	"hmans.dev/beans/internal/output"
 	"hmans.dev/beans/internal/ui"
 )
@@ -100,7 +101,7 @@ var listCmd = &cobra.Command{
 		beans = excludeByLinkedAs(beans, noLinkedAsFilters, idx)
 
 		// Sort beans
-		sortBeans(beans, listSort, cfg.StatusNames())
+		sortBeans(beans, listSort, cfg)
 
 		// JSON output
 		if listJSON {
@@ -182,7 +183,10 @@ var listCmd = &cobra.Command{
 	},
 }
 
-func sortBeans(beans []*bean.Bean, sortBy string, statusNames []string) {
+func sortBeans(beans []*bean.Bean, sortBy string, cfg *config.Config) {
+	statusNames := cfg.StatusNames()
+	typeNames := cfg.TypeNames()
+
 	switch sortBy {
 	case "created":
 		sort.Slice(beans, func(i, j int) bool {
@@ -223,9 +227,32 @@ func sortBeans(beans []*bean.Bean, sortBy string, statusNames []string) {
 			}
 			return beans[i].ID < beans[j].ID
 		})
-	default:
-		// Default: sort by ID
+	case "id":
 		sort.Slice(beans, func(i, j int) bool {
+			return beans[i].ID < beans[j].ID
+		})
+	default:
+		// Default: sort by archive status (not done first), then by type order
+		typeOrder := make(map[string]int)
+		for i, t := range typeNames {
+			typeOrder[t] = i
+		}
+
+		sort.Slice(beans, func(i, j int) bool {
+			// First: sort by archive status (non-archive/not-done first)
+			iArchive := cfg.IsArchiveStatus(beans[i].Status)
+			jArchive := cfg.IsArchiveStatus(beans[j].Status)
+			if iArchive != jArchive {
+				return !iArchive // non-archive (not done) comes first
+			}
+
+			// Second: sort by type order from config
+			ti, tj := typeOrder[beans[i].Type], typeOrder[beans[j].Type]
+			if ti != tj {
+				return ti < tj
+			}
+
+			// Finally: sort by ID for stable ordering
 			return beans[i].ID < beans[j].ID
 		})
 	}
@@ -440,7 +467,7 @@ func init() {
 	listCmd.Flags().StringArrayVar(&listNoLinks, "no-links", nil, "Exclude beans with outgoing relationship (format: type or type:id)")
 	listCmd.Flags().StringArrayVar(&listNoLinkedAs, "no-linked-as", nil, "Exclude beans with incoming relationship (format: type or type:id)")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
-	listCmd.Flags().StringVar(&listSort, "sort", "status", "Sort by: created, updated, status, id (default: status)")
+	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort by: created, updated, status, id (default: not-done/done, then type)")
 	listCmd.Flags().BoolVar(&listFull, "full", false, "Include bean body in JSON output")
 	listCmd.MarkFlagsMutuallyExclusive("json", "quiet")
 	rootCmd.AddCommand(listCmd)

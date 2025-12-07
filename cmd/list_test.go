@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/config"
 )
 
 func TestFilterBeans(t *testing.T) {
@@ -99,7 +100,18 @@ func TestSortBeans(t *testing.T) {
 	earlier := now.Add(-1 * time.Hour)
 	evenEarlier := now.Add(-2 * time.Hour)
 
-	statusNames := []string{"open", "in-progress", "done"}
+	testCfg := &config.Config{
+		Statuses: []config.StatusConfig{
+			{Name: "open", Color: "green"},
+			{Name: "in-progress", Color: "yellow"},
+			{Name: "done", Color: "gray", Archive: true},
+		},
+		Types: []config.TypeConfig{
+			{Name: "task", Color: "blue"},
+			{Name: "feature", Color: "green"},
+			{Name: "bug", Color: "red"},
+		},
+	}
 
 	t.Run("sort by id", func(t *testing.T) {
 		beans := []*bean.Bean{
@@ -107,7 +119,7 @@ func TestSortBeans(t *testing.T) {
 			{ID: "a1"},
 			{ID: "b2"},
 		}
-		sortBeans(beans, "id", statusNames)
+		sortBeans(beans, "id", testCfg)
 
 		if beans[0].ID != "a1" || beans[1].ID != "b2" || beans[2].ID != "c3" {
 			t.Errorf("sort by id: got [%s, %s, %s], want [a1, b2, c3]",
@@ -121,7 +133,7 @@ func TestSortBeans(t *testing.T) {
 			{ID: "new", CreatedAt: &now},
 			{ID: "mid", CreatedAt: &earlier},
 		}
-		sortBeans(beans, "created", statusNames)
+		sortBeans(beans, "created", testCfg)
 
 		// Should be newest first
 		if beans[0].ID != "new" || beans[1].ID != "mid" || beans[2].ID != "old" {
@@ -136,7 +148,7 @@ func TestSortBeans(t *testing.T) {
 			{ID: "has", CreatedAt: &now},
 			{ID: "nil2", CreatedAt: nil},
 		}
-		sortBeans(beans, "created", statusNames)
+		sortBeans(beans, "created", testCfg)
 
 		// Non-nil should come first, then nil sorted by ID
 		if beans[0].ID != "has" {
@@ -150,7 +162,7 @@ func TestSortBeans(t *testing.T) {
 			{ID: "new", UpdatedAt: &now},
 			{ID: "mid", UpdatedAt: &earlier},
 		}
-		sortBeans(beans, "updated", statusNames)
+		sortBeans(beans, "updated", testCfg)
 
 		// Should be newest first
 		if beans[0].ID != "new" || beans[1].ID != "mid" || beans[2].ID != "old" {
@@ -166,7 +178,7 @@ func TestSortBeans(t *testing.T) {
 			{ID: "i1", Status: "in-progress"},
 			{ID: "o2", Status: "open"},
 		}
-		sortBeans(beans, "status", statusNames)
+		sortBeans(beans, "status", testCfg)
 
 		// Should be ordered by status config order, then by ID within same status
 		expected := []string{"o1", "o2", "i1", "d1"}
@@ -177,17 +189,22 @@ func TestSortBeans(t *testing.T) {
 		}
 	})
 
-	t.Run("default sort (id)", func(t *testing.T) {
+	t.Run("default sort (archive status then type)", func(t *testing.T) {
 		beans := []*bean.Bean{
-			{ID: "c3"},
-			{ID: "a1"},
-			{ID: "b2"},
+			{ID: "done-bug", Status: "done", Type: "bug"},
+			{ID: "open-feature", Status: "open", Type: "feature"},
+			{ID: "open-task", Status: "open", Type: "task"},
+			{ID: "done-task", Status: "done", Type: "task"},
+			{ID: "open-bug", Status: "open", Type: "bug"},
 		}
-		sortBeans(beans, "unknown", statusNames)
+		sortBeans(beans, "", testCfg)
 
-		if beans[0].ID != "a1" || beans[1].ID != "b2" || beans[2].ID != "c3" {
-			t.Errorf("default sort: got [%s, %s, %s], want [a1, b2, c3]",
-				beans[0].ID, beans[1].ID, beans[2].ID)
+		// Should be: non-archive first (sorted by type: task, feature, bug), then archive (sorted by type)
+		expected := []string{"open-task", "open-feature", "open-bug", "done-task", "done-bug"}
+		for i, want := range expected {
+			if beans[i].ID != want {
+				t.Errorf("default sort[%d]: got %q, want %q", i, beans[i].ID, want)
+			}
 		}
 	})
 }
