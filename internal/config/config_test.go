@@ -284,11 +284,11 @@ func TestIsValidType(t *testing.T) {
 		typeName string
 		want     bool
 	}{
-		{"task", true},
+		{"epic", true},
+		{"milestone", true},
 		{"feature", true},
 		{"bug", true},
-		{"epic", true},
-		{"idea", true},
+		{"task", true},
 		{"invalid", false},
 		{"", false},
 		{"TASK", false}, // case sensitive
@@ -307,7 +307,7 @@ func TestIsValidType(t *testing.T) {
 func TestTypeList(t *testing.T) {
 	cfg := Default()
 	got := cfg.TypeList()
-	want := "idea, epic, bug, feature, task"
+	want := "epic, milestone, feature, bug, task"
 
 	if got != want {
 		t.Errorf("TypeList() = %q, want %q", got, want)
@@ -400,11 +400,11 @@ func TestTypeDescriptions(t *testing.T) {
 		cfg := Default()
 
 		expectedDescriptions := map[string]string{
-			"idea":    "A concept or suggestion to explore later",
-			"epic":    "A large initiative containing multiple related tasks",
-			"bug":     "Something that is broken and needs fixing",
-			"feature": "A new capability or enhancement to add",
-			"task":    "A concrete piece of work that needs to be done",
+			"epic":      "A thematic container for related work; should have child beans, not be worked on directly",
+			"milestone": "A target release or checkpoint; group work that should ship together",
+			"feature":   "A user-facing capability or enhancement",
+			"bug":       "Something that is broken and needs fixing",
+			"task":      "A concrete piece of work to complete",
 		}
 
 		for typeName, expectedDesc := range expectedDescriptions {

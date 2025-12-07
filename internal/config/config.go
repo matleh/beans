@@ -19,11 +19,11 @@ var DefaultStatuses = []StatusConfig{
 
 // DefaultTypes defines the default type configuration.
 var DefaultTypes = []TypeConfig{
-	{Name: "idea", Color: "yellow", Description: "A concept or suggestion to explore later"},
-	{Name: "epic", Color: "purple", Description: "A large initiative containing multiple related tasks"},
+	{Name: "epic", Color: "purple", Description: "A thematic container for related work; should have child beans, not be worked on directly"},
+	{Name: "milestone", Color: "cyan", Description: "A target release or checkpoint; group work that should ship together"},
+	{Name: "feature", Color: "green", Description: "A user-facing capability or enhancement"},
 	{Name: "bug", Color: "red", Description: "Something that is broken and needs fixing"},
-	{Name: "feature", Color: "green", Description: "A new capability or enhancement to add"},
-	{Name: "task", Color: "blue", Description: "A concrete piece of work that needs to be done"},
+	{Name: "task", Color: "blue", Description: "A concrete piece of work to complete"},
 }
 
 // StatusConfig defines a single status with its display color.
