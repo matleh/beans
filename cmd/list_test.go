@@ -95,6 +95,92 @@ func TestFilterBeans(t *testing.T) {
 	}
 }
 
+func TestExcludeByStatus(t *testing.T) {
+	// Create test beans
+	beans := []*bean.Bean{
+		{ID: "a1", Status: "open"},
+		{ID: "b2", Status: "in-progress"},
+		{ID: "c3", Status: "done"},
+		{ID: "d4", Status: "open"},
+		{ID: "e5", Status: "in-progress"},
+	}
+
+	tests := []struct {
+		name      string
+		statuses  []string
+		wantCount int
+		wantIDs   []string
+	}{
+		{
+			name:      "no exclusion",
+			statuses:  nil,
+			wantCount: 5,
+		},
+		{
+			name:      "empty exclusion",
+			statuses:  []string{},
+			wantCount: 5,
+		},
+		{
+			name:      "exclude done",
+			statuses:  []string{"done"},
+			wantCount: 4,
+			wantIDs:   []string{"a1", "b2", "d4", "e5"},
+		},
+		{
+			name:      "exclude in-progress",
+			statuses:  []string{"in-progress"},
+			wantCount: 3,
+			wantIDs:   []string{"a1", "c3", "d4"},
+		},
+		{
+			name:      "exclude multiple statuses",
+			statuses:  []string{"done", "in-progress"},
+			wantCount: 2,
+			wantIDs:   []string{"a1", "d4"},
+		},
+		{
+			name:      "exclude all",
+			statuses:  []string{"open", "in-progress", "done"},
+			wantCount: 0,
+		},
+		{
+			name:      "exclude non-existent status",
+			statuses:  []string{"invalid"},
+			wantCount: 5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := excludeByStatus(beans, tt.statuses)
+
+			if len(got) != tt.wantCount {
+				t.Errorf("excludeByStatus() count = %d, want %d", len(got), tt.wantCount)
+			}
+
+			if tt.wantIDs != nil {
+				gotIDs := make([]string, len(got))
+				for i, b := range got {
+					gotIDs[i] = b.ID
+				}
+				for _, wantID := range tt.wantIDs {
+					found := false
+					for _, gotID := range gotIDs {
+						if gotID == wantID {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("excludeByStatus() missing expected ID %q", wantID)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestSortBeans(t *testing.T) {
 	now := time.Now()
 	earlier := now.Add(-1 * time.Hour)

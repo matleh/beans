@@ -16,6 +16,7 @@ import (
 var (
 	listJSON       bool
 	listStatus     []string
+	listNoStatus   []string
 	listLinks      []string
 	listLinkedAs   []string
 	listNoLinks    []string
@@ -95,6 +96,7 @@ var listCmd = &cobra.Command{
 
 		// Apply filters (positive first, then exclusions)
 		beans = filterBeans(beans, listStatus)
+		beans = excludeByStatus(beans, listNoStatus)
 		beans = filterByLinks(beans, linksFilters)
 		beans = filterByLinkedAs(beans, linkedAsFilters, idx)
 		beans = excludeByLinks(beans, noLinksFilters)
@@ -274,6 +276,33 @@ func filterBeans(beans []*bean.Bean, statuses []string) []*bean.Bean {
 			}
 		}
 		if matched {
+			filtered = append(filtered, b)
+		}
+	}
+	return filtered
+}
+
+// excludeByStatus excludes beans that match any of the given statuses.
+// Inverse of filterBeans: returns beans that DON'T match the criteria.
+//
+// Examples:
+//   - --no-status done returns beans that are not done
+//   - --no-status done --no-status archived returns beans that are neither done nor archived
+func excludeByStatus(beans []*bean.Bean, statuses []string) []*bean.Bean {
+	if len(statuses) == 0 {
+		return beans
+	}
+
+	var filtered []*bean.Bean
+	for _, b := range beans {
+		excluded := false
+		for _, s := range statuses {
+			if b.Status == s {
+				excluded = true
+				break
+			}
+		}
+		if !excluded {
 			filtered = append(filtered, b)
 		}
 	}
@@ -462,6 +491,7 @@ func truncate(s string, maxLen int) string {
 func init() {
 	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON")
 	listCmd.Flags().StringArrayVarP(&listStatus, "status", "s", nil, "Filter by status (can be repeated)")
+	listCmd.Flags().StringArrayVar(&listNoStatus, "no-status", nil, "Exclude by status (can be repeated)")
 	listCmd.Flags().StringArrayVar(&listLinks, "links", nil, "Filter by outgoing relationship (format: type or type:id)")
 	listCmd.Flags().StringArrayVar(&listLinkedAs, "linked-as", nil, "Filter by incoming relationship (format: type or type:id)")
 	listCmd.Flags().StringArrayVar(&listNoLinks, "no-links", nil, "Exclude beans with outgoing relationship (format: type or type:id)")

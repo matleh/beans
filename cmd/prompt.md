@@ -11,7 +11,8 @@ All commands support --json for machine-readable output. Use this flag to parse 
 
 1. FIRST: Create a bean with `beans create "Title" -t <type> -d "Description..." -s in-progress --no-edit`
 2. THEN: Do the work
-3. FINALLY: Mark done with `beans update <bean-id> --status done` (do this before committing)
+3. FINALLY: Mark done with `beans update <bean-id> --status done`
+4. COMMIT: Include both your code changes AND the bean file(s) in the commit
 
 **Do NOT use the TodoWrite tool or markdown TODOs.** Use beans for all task tracking.
 
@@ -26,6 +27,7 @@ If you identify something that should be tracked during your work, create a bean
 
 ## Finding work
 
+- `beans list --no-status done --no-linked-as blocks --json` to find actionable beans (not done, not blocked)
 - `beans list --json` to list all beans (descriptions not included by default)
 - `beans list --json --full` to include full description content
 
@@ -69,7 +71,14 @@ Use `--no-links` and `--no-linked-as` to exclude beans matching a relationship:
 
 - `beans list --no-linked-as blocks` - Show beans NOT blocked by anything (actionable work)
 - `beans list --no-links parent` - Show beans without a parent (top-level items)
-- `beans list --status open --no-linked-as blocks` - Open, unblocked beans
+
+**Excluding by status:**
+
+Use `--no-status` to exclude beans with specific statuses:
+
+- `beans list --no-status done` - Show beans that are not done
+- `beans list --no-status done --no-status archived` - Exclude multiple statuses
+- `beans list --no-status done --no-linked-as blocks` - Actionable beans (not done, not blocked)
 
 ## Creating new beans
 
