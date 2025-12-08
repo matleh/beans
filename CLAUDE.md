@@ -1,15 +1,13 @@
 # What we're building
 
-This is going to be a small CLI app that interacts with a .beans/ directory that stores "issues" (like in an issue tracker) as markdown files with front matter. It is meant to be used as part of an AI-first coding workflow.
+This is a small CLI app that interacts with a .beans/ directory that stores "issues" (like in an issue tracker) as markdown files with front matter. It is meant to be used as part of an AI-first coding workflow.
 
 - This is an agentic-first issue tracker. Issues are called beans.
 - Projects configure beans via a `.beans.yml` file at the project root.
-- Bean data is stored in a `.beans/` directory (configurable via `beans_path` in `.beans.yml`).
+- Bean data is stored in a `.beans/` directory (configurable via `beans.path` in `.beans.yml`).
 - The executable built from this project here is called `beans` and interacts with said directory.
 - The `beans` command is designed to be used by a coding agent (Claude, OpenCode, etc.) to interact with the project's issues.
 - `.beans/` contains markdown files that represent individual beans (flat structure, no subdirectories).
-- The individual bean filenames start with a string-based ID (use 3-character NanoID here so things stay mergable), optionally followed by a dash and a short description
-  (mostly used to keep things human-editable). Examples for valid names: `f7g.md`, `f7g-user-registration.md`.
 
 # Rules
 
@@ -19,6 +17,10 @@ This is going to be a small CLI app that interacts with a .beans/ directory that
 - When making commits, provide a meaningful commit message. The description should be a concise bullet point list of changes made.
 - After making a meaningful change that should be mentioned in the changelog, create a change file using `changie new`. (See `changie new --help` for options.)
 - When we're working in a PR branch, make separate commits, and update the PR description to reflect the changes made.
+
+# Extra rules for our own beans/issues
+
+- Use the `idea` tag for ideas and proposals.
 
 # Building
 
@@ -38,11 +40,3 @@ This is going to be a small CLI app that interacts with a .beans/ directory that
 
 - Use `go run .` instead of building the executable first.
 - When testing read-only functionality, feel free to use this project's own `.beans/` directory. But for anything that modifies data, create a separate test project directory. All commands support the `--beans-path` flag to specify a custom path.
-
-# Releasing
-
-Releases are managed using **changie** for changelog generation and automatic version detection.
-
-- `mise release` - Release with auto-detected version (prompts for confirmation)
-
-This task detects the appropriate version bump based on changelog entries, shows the version to be released, and asks for confirmation before proceeding. It then creates and pushes the git tag, which triggers goreleaser to build and publish the release.
