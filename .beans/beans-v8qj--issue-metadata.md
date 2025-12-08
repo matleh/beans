@@ -1,12 +1,12 @@
 ---
 title: Issue metadata
-status: in-progress
+status: done
 type: epic
 tags:
     - schema
     - core
 created_at: 2025-12-06T21:46:00Z
-updated_at: 2025-12-07T19:00:57Z
+updated_at: 2025-12-08T14:01:34Z
 links:
     - parent: beans-7lmv
 ---
