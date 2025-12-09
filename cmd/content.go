@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/hmans/beans/internal/bean"
 	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/output"
 )
 
 // resolveContent returns content from a direct value or file flag.
@@ -118,4 +120,45 @@ func removeLinks(b *bean.Bean, links []string) error {
 		b.Links = b.Links.Remove(linkType, targetID)
 	}
 	return nil
+}
+
+// cmdError returns an appropriate error for JSON or text mode.
+// Note: Use %v instead of %w for error arguments - wrapping is not preserved in JSON mode.
+func cmdError(jsonMode bool, code string, format string, args ...any) error {
+	if jsonMode {
+		return output.Error(code, fmt.Sprintf(format, args...))
+	}
+	return fmt.Errorf(format, args...)
+}
+
+// openInEditor opens the file in $EDITOR if set.
+func openInEditor(path string) {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		return
+	}
+	editorCmd := exec.Command(editor, path)
+	editorCmd.Stdin = os.Stdin
+	editorCmd.Stdout = os.Stdout
+	editorCmd.Stderr = os.Stderr
+	_ = editorCmd.Run() // Ignore error - editor failures are not fatal
+}
+
+// mergeTags combines existing tags with additions and removals.
+func mergeTags(existing, add, remove []string) []string {
+	tags := make(map[string]bool)
+	for _, t := range existing {
+		tags[t] = true
+	}
+	for _, t := range add {
+		tags[t] = true
+	}
+	for _, t := range remove {
+		delete(tags, t)
+	}
+	result := make([]string, 0, len(tags))
+	for t := range tags {
+		result = append(result, t)
+	}
+	return result
 }

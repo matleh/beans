@@ -2,12 +2,16 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/graph"
 	"github.com/hmans/beans/internal/output"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -25,69 +29,64 @@ If other beans link to this bean, you will be warned and those references
 will be removed after confirmation. Use -f to skip all warnings.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		b, err := core.Get(args[0])
+		ctx := context.Background()
+		resolver := &graph.Resolver{Core: core}
+
+		// Find the bean
+		b, err := resolver.Query().Bean(ctx, args[0])
 		if err != nil {
-			if deleteJSON {
-				return output.Error(output.ErrNotFound, err.Error())
-			}
-			return fmt.Errorf("failed to find bean: %w", err)
+			return cmdError(deleteJSON, output.ErrNotFound, "failed to find bean: %v", err)
+		}
+		if b == nil {
+			return cmdError(deleteJSON, output.ErrNotFound, "bean not found: %s", args[0])
 		}
 
 		// Check for incoming links
 		incomingLinks := core.FindIncomingLinks(b.ID)
 		hasIncoming := len(incomingLinks) > 0
 
-		// JSON implies force (no prompts for machines)
+		// Prompt for confirmation (JSON implies force)
 		if !forceDelete && !deleteJSON {
-			// Warn about incoming links
-			if hasIncoming {
-				fmt.Printf("Warning: %d bean(s) link to '%s':\n", len(incomingLinks), b.Title)
-				for _, link := range incomingLinks {
-					fmt.Printf("  - %s (%s) via %s\n", link.FromBean.ID, link.FromBean.Title, link.LinkType)
-				}
-				fmt.Print("Delete anyway and remove references? [y/N] ")
-			} else {
-				fmt.Printf("Delete '%s' (%s)? [y/N] ", b.Title, b.Path)
-			}
-
-			reader := bufio.NewReader(os.Stdin)
-			response, _ := reader.ReadString('\n')
-			response = strings.TrimSpace(strings.ToLower(response))
-
-			if response != "y" && response != "yes" {
+			if !confirmDelete(b, incomingLinks) {
 				fmt.Println("Cancelled")
 				return nil
 			}
 		}
 
-		// Remove incoming links before deletion
-		if hasIncoming {
-			removed, err := core.RemoveLinksTo(b.ID)
-			if err != nil {
-				if deleteJSON {
-					return output.Error(output.ErrFileError, fmt.Sprintf("failed to remove references: %s", err))
-				}
-				return fmt.Errorf("failed to remove references: %w", err)
-			}
-			if !deleteJSON {
-				fmt.Printf("Removed %d reference(s)\n", removed)
-			}
-		}
-
-		if err := core.Delete(args[0]); err != nil {
-			if deleteJSON {
-				return output.Error(output.ErrFileError, err.Error())
-			}
-			return fmt.Errorf("failed to delete bean: %w", err)
+		// Delete via GraphQL mutation
+		_, err = resolver.Mutation().DeleteBean(ctx, b.ID)
+		if err != nil {
+			return cmdError(deleteJSON, output.ErrFileError, "failed to delete bean: %v", err)
 		}
 
 		if deleteJSON {
 			return output.Success(b, "Bean deleted")
 		}
 
+		if hasIncoming {
+			fmt.Printf("Removed %d reference(s)\n", len(incomingLinks))
+		}
 		fmt.Printf("Deleted %s\n", b.Path)
 		return nil
 	},
+}
+
+// confirmDelete prompts the user to confirm deletion, returning true if confirmed.
+func confirmDelete(b *bean.Bean, incomingLinks []beancore.IncomingLink) bool {
+	if len(incomingLinks) > 0 {
+		fmt.Printf("Warning: %d bean(s) link to '%s':\n", len(incomingLinks), b.Title)
+		for _, link := range incomingLinks {
+			fmt.Printf("  - %s (%s) via %s\n", link.FromBean.ID, link.FromBean.Title, link.LinkType)
+		}
+		fmt.Print("Delete anyway and remove references? [y/N] ")
+	} else {
+		fmt.Printf("Delete '%s' (%s)? [y/N] ", b.Title, b.Path)
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	response, _ := reader.ReadString('\n')
+	response = strings.TrimSpace(strings.ToLower(response))
+	return response == "y" || response == "yes"
 }
 
 func init() {

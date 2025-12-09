@@ -1,15 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/graph"
+	"github.com/hmans/beans/internal/graph/model"
 	"github.com/hmans/beans/internal/output"
 	"github.com/hmans/beans/internal/ui"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -46,167 +47,139 @@ Use flags to specify which properties to update:
 Relationship types: blocks, duplicates, parent, related`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id := args[0]
+		ctx := context.Background()
+		resolver := &graph.Resolver{Core: core}
 
 		// Find the bean
-		b, err := core.Get(id)
+		b, err := resolver.Query().Bean(ctx, args[0])
 		if err != nil {
-			if updateJSON {
-				return output.Error(output.ErrNotFound, err.Error())
-			}
-			return fmt.Errorf("failed to find bean: %w", err)
+			return cmdError(updateJSON, output.ErrNotFound, "failed to find bean: %v", err)
+		}
+		if b == nil {
+			return cmdError(updateJSON, output.ErrNotFound, "bean not found: %s", args[0])
 		}
 
-		// Track what changed for output message
+		// Track changes for output
 		var changes []string
-		var warnings []string
 
-		// Update status if provided
-		if cmd.Flags().Changed("status") {
-			if !cfg.IsValidStatus(updateStatus) {
-				if updateJSON {
-					return output.Error(output.ErrInvalidStatus, fmt.Sprintf("invalid status: %s (must be %s)", updateStatus, cfg.StatusList()))
-				}
-				return fmt.Errorf("invalid status: %s (must be %s)", updateStatus, cfg.StatusList())
-			}
-			b.Status = updateStatus
-			changes = append(changes, "status")
+		// Build and validate field updates
+		input, fieldChanges, err := buildUpdateInput(cmd, b.Tags)
+		if err != nil {
+			return cmdError(updateJSON, output.ErrValidation, "%s", err)
 		}
+		changes = append(changes, fieldChanges...)
 
-		// Update type if provided
-		if cmd.Flags().Changed("type") {
-			if !cfg.IsValidType(updateType) {
-				if updateJSON {
-					return output.Error(output.ErrValidation, fmt.Sprintf("invalid type: %s (must be %s)", updateType, cfg.TypeList()))
-				}
-				return fmt.Errorf("invalid type: %s (must be %s)", updateType, cfg.TypeList())
-			}
-			b.Type = updateType
-			changes = append(changes, "type")
-		}
-
-		// Update priority if provided
-		if cmd.Flags().Changed("priority") {
-			if !cfg.IsValidPriority(updatePriority) {
-				if updateJSON {
-					return output.Error(output.ErrValidation, fmt.Sprintf("invalid priority: %s (must be %s)", updatePriority, cfg.PriorityList()))
-				}
-				return fmt.Errorf("invalid priority: %s (must be %s)", updatePriority, cfg.PriorityList())
-			}
-			b.Priority = updatePriority
-			changes = append(changes, "priority")
-		}
-
-		// Update title if provided
-		if cmd.Flags().Changed("title") {
-			b.Title = updateTitle
-			changes = append(changes, "title")
-		}
-
-		// Update body if provided
-		if cmd.Flags().Changed("body") || cmd.Flags().Changed("body-file") {
-			body, err := resolveContent(updateBody, updateBodyFile)
+		// Apply field updates
+		if hasFieldUpdates(input) {
+			b, err = resolver.Mutation().UpdateBean(ctx, b.ID, input)
 			if err != nil {
-				if updateJSON {
-					return output.Error(output.ErrFileError, err.Error())
-				}
-				return err
+				return cmdError(updateJSON, output.ErrFileError, "failed to save bean: %v", err)
 			}
-			b.Body = body
-			changes = append(changes, "body")
 		}
 
-		// Add links
-		if len(updateLink) > 0 {
-			linkWarnings, err := applyLinks(b, updateLink)
+		// Process link additions
+		for _, linkStr := range updateLink {
+			linkType, target, err := parseLink(linkStr)
 			if err != nil {
-				if updateJSON {
-					return output.Error(output.ErrValidation, err.Error())
-				}
-				return err
+				return cmdError(updateJSON, output.ErrValidation, "%s", err)
 			}
-			warnings = append(warnings, linkWarnings...)
-			changes = append(changes, "links")
-		}
-
-		// Remove links
-		if len(updateUnlink) > 0 {
-			if err := removeLinks(b, updateUnlink); err != nil {
-				if updateJSON {
-					return output.Error(output.ErrValidation, err.Error())
-				}
-				return err
+			b, err = resolver.Mutation().AddLink(ctx, b.ID, model.LinkInput{Type: linkType, Target: target})
+			if err != nil {
+				return cmdError(updateJSON, output.ErrValidation, "%s", err)
 			}
 			changes = append(changes, "links")
 		}
 
-		// Add tags
-		if len(updateTag) > 0 {
-			if err := applyTags(b, updateTag); err != nil {
-				if updateJSON {
-					return output.Error(output.ErrValidation, err.Error())
-				}
-				return err
+		// Process link removals
+		for _, linkStr := range updateUnlink {
+			linkType, target, err := parseLink(linkStr)
+			if err != nil {
+				return cmdError(updateJSON, output.ErrValidation, "%s", err)
 			}
-			changes = append(changes, "tags")
+			b, err = resolver.Mutation().RemoveLink(ctx, b.ID, model.LinkInput{Type: linkType, Target: target})
+			if err != nil {
+				return cmdError(updateJSON, output.ErrValidation, "%s", err)
+			}
+			changes = append(changes, "links")
 		}
 
-		// Remove tags
-		if len(updateUntag) > 0 {
-			for _, tag := range updateUntag {
-				b.RemoveTag(tag)
-			}
-			changes = append(changes, "tags")
-		}
-
-		// Check if anything was changed
+		// Require at least one change
 		if len(changes) == 0 {
-			if updateJSON {
-				return output.Error(output.ErrValidation, "no changes specified")
-			}
-			return fmt.Errorf("no changes specified (use --status, --type, --priority, --title, --body, --link, --unlink, --tag, or --untag)")
-		}
-
-		// Save the bean
-		if err := core.Update(b); err != nil {
-			if updateJSON {
-				return output.Error(output.ErrFileError, err.Error())
-			}
-			return fmt.Errorf("failed to save bean: %w", err)
+			return cmdError(updateJSON, output.ErrValidation,
+				"no changes specified (use --status, --type, --priority, --title, --body, --link, --unlink, --tag, or --untag)")
 		}
 
 		// Output result
 		if updateJSON {
-			if len(warnings) > 0 {
-				return output.SuccessWithWarnings(b, "Bean updated", warnings)
-			}
 			return output.Success(b, "Bean updated")
-		}
-
-		// Print warnings in text mode
-		for _, w := range warnings {
-			fmt.Println(ui.Warning.Render("Warning: ") + w)
 		}
 
 		fmt.Println(ui.Success.Render("Updated ") + ui.ID.Render(b.ID) + " " + ui.Muted.Render(b.Path))
 
-		// Open in editor unless --no-edit or --json
-		if !updateNoEdit && !updateJSON {
-			editor := os.Getenv("EDITOR")
-			if editor != "" {
-				path := core.FullPath(b)
-				editorCmd := exec.Command(editor, path)
-				editorCmd.Stdin = os.Stdin
-				editorCmd.Stdout = os.Stdout
-				editorCmd.Stderr = os.Stderr
-				if err := editorCmd.Run(); err != nil {
-					return fmt.Errorf("editor failed: %w", err)
-				}
-			}
+		// Open in editor unless --no-edit
+		if !updateNoEdit {
+			openInEditor(core.FullPath(b))
 		}
 
 		return nil
 	},
+}
+
+// buildUpdateInput constructs the GraphQL input from flags and returns which fields changed.
+func buildUpdateInput(cmd *cobra.Command, existingTags []string) (model.UpdateBeanInput, []string, error) {
+	var input model.UpdateBeanInput
+	var changes []string
+
+	if cmd.Flags().Changed("status") {
+		if !cfg.IsValidStatus(updateStatus) {
+			return input, nil, fmt.Errorf("invalid status: %s (must be %s)", updateStatus, cfg.StatusList())
+		}
+		input.Status = &updateStatus
+		changes = append(changes, "status")
+	}
+
+	if cmd.Flags().Changed("type") {
+		if !cfg.IsValidType(updateType) {
+			return input, nil, fmt.Errorf("invalid type: %s (must be %s)", updateType, cfg.TypeList())
+		}
+		input.Type = &updateType
+		changes = append(changes, "type")
+	}
+
+	if cmd.Flags().Changed("priority") {
+		if !cfg.IsValidPriority(updatePriority) {
+			return input, nil, fmt.Errorf("invalid priority: %s (must be %s)", updatePriority, cfg.PriorityList())
+		}
+		input.Priority = &updatePriority
+		changes = append(changes, "priority")
+	}
+
+	if cmd.Flags().Changed("title") {
+		input.Title = &updateTitle
+		changes = append(changes, "title")
+	}
+
+	if cmd.Flags().Changed("body") || cmd.Flags().Changed("body-file") {
+		body, err := resolveContent(updateBody, updateBodyFile)
+		if err != nil {
+			return input, nil, err
+		}
+		input.Body = &body
+		changes = append(changes, "body")
+	}
+
+	if len(updateTag) > 0 || len(updateUntag) > 0 {
+		input.Tags = mergeTags(existingTags, updateTag, updateUntag)
+		changes = append(changes, "tags")
+	}
+
+	return input, changes, nil
+}
+
+// hasFieldUpdates returns true if any field in the input is set.
+func hasFieldUpdates(input model.UpdateBeanInput) bool {
+	return input.Status != nil || input.Type != nil || input.Priority != nil ||
+		input.Title != nil || input.Body != nil || input.Tags != nil
 }
 
 func init() {

@@ -1,14 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/spf13/cobra"
-	"github.com/hmans/beans/internal/bean"
 	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/graph"
+	"github.com/hmans/beans/internal/graph/model"
 	"github.com/hmans/beans/internal/output"
 	"github.com/hmans/beans/internal/ui"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -28,99 +30,71 @@ var createCmd = &cobra.Command{
 	Long:  `Creates a new bean (issue) with a generated ID and optional title.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		title := strings.Join(args, " ")
-		status := createStatus
-
-		// Validate status if provided
-		if status != "" && !cfg.IsValidStatus(status) {
-			if createJSON {
-				return output.Error(output.ErrInvalidStatus, fmt.Sprintf("invalid status: %s (must be %s)", status, cfg.StatusList()))
-			}
-			return fmt.Errorf("invalid status: %s (must be %s)", status, cfg.StatusList())
-		}
-		if status == "" {
-			status = cfg.GetDefaultStatus()
-		}
-
-		// Validate type if provided
-		if createType != "" && !cfg.IsValidType(createType) {
-			if createJSON {
-				return output.Error(output.ErrValidation, fmt.Sprintf("invalid type: %s (must be %s)", createType, cfg.TypeList()))
-			}
-			return fmt.Errorf("invalid type: %s (must be %s)", createType, cfg.TypeList())
-		}
-		if createType == "" {
-			createType = cfg.GetDefaultType()
-		}
-
-		// Validate priority if provided
-		if createPriority != "" && !cfg.IsValidPriority(createPriority) {
-			if createJSON {
-				return output.Error(output.ErrValidation, fmt.Sprintf("invalid priority: %s (must be %s)", createPriority, cfg.PriorityList()))
-			}
-			return fmt.Errorf("invalid priority: %s (must be %s)", createPriority, cfg.PriorityList())
-		}
-
-		// Determine body content
-		body, err := resolveContent(createBody, createBodyFile)
-		if err != nil {
-			if createJSON {
-				return output.Error(output.ErrFileError, err.Error())
-			}
-			return err
-		}
-
 		if title == "" {
 			title = "Untitled"
 		}
 
-		b := &bean.Bean{
-			Slug:     bean.Slugify(title),
-			Title:    title,
-			Status:   status,
-			Type:     createType,
-			Priority: createPriority,
-			Body:     body,
+		// Validate inputs
+		if createStatus != "" && !cfg.IsValidStatus(createStatus) {
+			return cmdError(createJSON, output.ErrInvalidStatus, "invalid status: %s (must be %s)", createStatus, cfg.StatusList())
+		}
+		if createType != "" && !cfg.IsValidType(createType) {
+			return cmdError(createJSON, output.ErrValidation, "invalid type: %s (must be %s)", createType, cfg.TypeList())
+		}
+		if createPriority != "" && !cfg.IsValidPriority(createPriority) {
+			return cmdError(createJSON, output.ErrValidation, "invalid priority: %s (must be %s)", createPriority, cfg.PriorityList())
 		}
 
-		// Add tags if provided
-		if err := applyTags(b, createTag); err != nil {
-			if createJSON {
-				return output.Error(output.ErrValidation, err.Error())
-			}
-			return err
-		}
-
-		// Add links if provided
-		warnings, err := applyLinks(b, createLink)
+		body, err := resolveContent(createBody, createBodyFile)
 		if err != nil {
-			if createJSON {
-				return output.Error(output.ErrValidation, err.Error())
-			}
-			return err
+			return cmdError(createJSON, output.ErrFileError, "%s", err)
 		}
 
-		if err := core.Create(b); err != nil {
-			if createJSON {
-				return output.Error(output.ErrFileError, err.Error())
-			}
-			return fmt.Errorf("failed to create bean: %w", err)
+		// Build GraphQL input
+		input := model.CreateBeanInput{Title: title}
+		if createStatus != "" {
+			input.Status = &createStatus
+		} else {
+			defaultStatus := cfg.GetDefaultStatus()
+			input.Status = &defaultStatus
+		}
+		if createType != "" {
+			input.Type = &createType
+		} else {
+			defaultType := cfg.GetDefaultType()
+			input.Type = &defaultType
+		}
+		if createPriority != "" {
+			input.Priority = &createPriority
+		}
+		if body != "" {
+			input.Body = &body
+		}
+		if len(createTag) > 0 {
+			input.Tags = createTag
 		}
 
-		// Output result
+		// Parse and add links
+		for _, linkStr := range createLink {
+			linkType, target, err := parseLink(linkStr)
+			if err != nil {
+				return cmdError(createJSON, output.ErrValidation, "%s", err)
+			}
+			input.Links = append(input.Links, &model.LinkInput{Type: linkType, Target: target})
+		}
+
+		// Create via GraphQL mutation
+		resolver := &graph.Resolver{Core: core}
+		b, err := resolver.Mutation().CreateBean(context.Background(), input)
+		if err != nil {
+			return cmdError(createJSON, output.ErrFileError, "failed to create bean: %v", err)
+		}
+
 		if createJSON {
-			if len(warnings) > 0 {
-				return output.SuccessWithWarnings(b, "Bean created", warnings)
-			}
 			return output.Success(b, "Bean created")
 		}
 
-		// Print warnings in text mode
-		for _, w := range warnings {
-			fmt.Println(ui.Warning.Render("Warning: ") + w)
-		}
-
 		fmt.Println(ui.Success.Render("Created ") + ui.ID.Render(b.ID) + " " + ui.Muted.Render(b.Path))
-
 		return nil
 	},
 }

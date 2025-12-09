@@ -1,10 +1,10 @@
 ---
 title: Migrate 'delete' command to use GraphQL mutations
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2025-12-09T12:04:25Z
-updated_at: 2025-12-09T12:06:08Z
+updated_at: 2025-12-09T13:02:28Z
 links:
     - blocks: beans-wp2o
     - parent: beans-7ao1
