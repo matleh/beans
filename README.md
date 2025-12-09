@@ -6,7 +6,7 @@ This gives your robot friends a juicy upgrade: now they get a complete view of y
 
 You've been programming all your life; now you get to be a product manager. Let's go! 🚀
 
-> **Warning**: This project is in a very early state. There **will** be breaking changes. Use at your own risk!
+> **Warning**: As long as this project is still within the `0.1.x` version range, expect constant breaking changes. I'm dogfooding Beans in my own projects (including Beans itself), so things generally work great, but every now and then I still need to turn things inside out. If you're serious about diving in, I would advise to wait at least for the upcoming `0.2.0` release.
 
 ## Features
 
