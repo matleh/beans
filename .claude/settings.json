@@ -6,7 +6,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "beans prompt"
+                        "command": "beans prime"
                     }
                 ]
             }
@@ -17,7 +17,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "beans prompt"
+                        "command": "beans prime"
                     }
                 ]
             }
