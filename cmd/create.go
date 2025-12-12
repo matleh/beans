@@ -26,9 +26,10 @@ var (
 )
 
 var createCmd = &cobra.Command{
-	Use:   "create [title]",
-	Short: "Create a new bean",
-	Long:  `Creates a new bean (issue) with a generated ID and optional title.`,
+	Use:     "create [title]",
+	Aliases: []string{"c", "new"},
+	Short:   "Create a new bean",
+	Long:    `Creates a new bean (issue) with a generated ID and optional title.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		title := strings.Join(args, " ")
 		if title == "" {
