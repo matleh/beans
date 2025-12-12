@@ -61,17 +61,27 @@ We'll need to teach your coding agent that it should use Beans to track tasks, a
 
 ### Claude Code
 
-The recommended way to integrate Beans with Claude Code is through the `beans-prime` plugin. In Claude, register and activate the plugin like so:
+An official Beans plugin for Claude is in the works, but for the time being, please manually add the following hooks to your project's `.claude/settings.json` file:
 
+```json
+{
+  // ... other settings ...
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "beans prime" }]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [{ "type": "command", "command": "beans prime" }]
+      }
+    ]
+  }
+}
 ```
-/plugin marketplace add hmans/beans
-/plugin install beans-prime
-```
-
-> **IMPORTANT:**
-> Restart Claude Code after installing the plugin to ensure it loads correctly.
-
-If you prefer not to use the plugin system, you can manually add [the necessary hooks](extras/claude/plugins/beans-prime/hooks/hooks.json) to your Claude Code `settings.json`.
 
 ### Other Agents
 
