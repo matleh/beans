@@ -12,6 +12,10 @@ This gives your robot friends a juicy upgrade: now they get a complete view of y
 
 You've been programming all your life; now you get to be a product manager. Let's go! 🚀
 
+## Announcement Trailer ✨
+
+https://github.com/user-attachments/assets/dbe45408-d3ed-4681-a436-a5e3046163da
+
 ## Features
 
 - Track tasks, bugs, features, and more right alongside your code.
