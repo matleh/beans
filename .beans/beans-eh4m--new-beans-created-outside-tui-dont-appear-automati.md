@@ -1,25 +1,20 @@
 ---
 title: New beans created outside TUI don't appear automatically
-status: backlog
+status: completed
 type: bug
+priority: normal
 created_at: 2025-12-12T23:02:58Z
-updated_at: 2025-12-12T23:02:58Z
+updated_at: 2025-12-12T23:26:46Z
 ---
 
 ## Problem
 
-When the TUI is running, new beans created outside of it (e.g., via CLI in another terminal, or by an agent) don't appear in the TUI until it's restarted.
+When a modal picker (status, type, or parent) is open in the TUI, changes to beans (new beans created or existing beans updated) are not reflected when returning to the main view.
 
-## Expected Behavior
+## Root Cause
 
-The TUI should automatically detect new bean files in the `.beans/` directory and add them to the list.
+The close picker messages (`closeParentPickerMsg`, `closeStatusPickerMsg`, `closeTypePickerMsg`) only restore the previous view state but don't trigger a beans reload. While the picker is open, `beansChangedMsg` may fire but the list isn't refreshed until the user makes a selection (which does trigger reload) or restarts the TUI.
 
-## Likely Cause
+## Fix
 
-This is probably related to how we're watching for file changes. The file watcher may only be watching for modifications to existing files, not for new files being created in the directory.
-
-## Investigation Areas
-
-- [ ] Check how the file watcher is configured in the TUI
-- [ ] Verify if we're watching the directory itself vs individual files
-- [ ] Ensure CREATE events are being handled, not just MODIFY events
+Always reload beans when closing any picker modal, regardless of whether a selection was made.

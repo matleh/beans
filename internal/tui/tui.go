@@ -178,9 +178,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.parentPicker.Init()
 
 	case closeParentPickerMsg:
-		// Return to previous view without making changes
+		// Return to previous view and refresh in case beans changed while picker was open
 		a.state = a.previousState
-		return a, nil
+		return a, a.list.loadBeans
 
 	case openStatusPickerMsg:
 		a.previousState = a.state
@@ -189,8 +189,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.statusPicker.Init()
 
 	case closeStatusPickerMsg:
+		// Return to previous view and refresh in case beans changed while picker was open
 		a.state = a.previousState
-		return a, nil
+		return a, a.list.loadBeans
 
 	case statusSelectedMsg:
 		// Update the bean's status via GraphQL mutation
@@ -218,8 +219,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, a.typePicker.Init()
 
 	case closeTypePickerMsg:
+		// Return to previous view and refresh in case beans changed while picker was open
 		a.state = a.previousState
-		return a, nil
+		return a, a.list.loadBeans
 
 	case typeSelectedMsg:
 		// Update the bean's type via GraphQL mutation
