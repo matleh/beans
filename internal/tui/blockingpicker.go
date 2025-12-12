@@ -16,11 +16,11 @@ import (
 	"github.com/hmans/beans/internal/ui"
 )
 
-// blockingToggledMsg is sent when a blocking relationship is toggled
-type blockingToggledMsg struct {
-	beanID   string // the bean we're modifying
-	targetID string // the bean being blocked/unblocked
-	added    bool   // true if blocking was added, false if removed
+// blockingConfirmedMsg is sent when blocking changes are confirmed
+type blockingConfirmedMsg struct {
+	beanID  string            // the bean we're modifying
+	toAdd   []string          // IDs to add to blocking
+	toRemove []string         // IDs to remove from blocking
 }
 
 // closeBlockingPickerMsg is sent when the blocking picker is cancelled
@@ -37,7 +37,7 @@ type openBlockingPickerMsg struct {
 type blockingItem struct {
 	bean       *bean.Bean
 	cfg        *config.Config
-	isBlocking bool // true if current bean is blocking this one
+	isBlocking bool // true if current bean is blocking this one (pending state)
 }
 
 func (i blockingItem) Title() string       { return i.bean.Title }
@@ -91,9 +91,11 @@ func (d blockingItemDelegate) Render(w io.Writer, m list.Model, index int, listI
 // blockingPickerModel is the model for the blocking picker view
 type blockingPickerModel struct {
 	list            list.Model
-	beanID          string   // the bean we're setting blocking for
-	beanTitle       string   // the bean's title
-	currentBlocking []string // IDs currently being blocked
+	beanID          string              // the bean we're setting blocking for
+	beanTitle       string              // the bean's title
+	originalBlocking map[string]bool    // original state (for computing diff)
+	pendingBlocking  map[string]bool    // pending state (toggled by space)
+	cfg             *config.Config
 	width           int
 	height          int
 }
@@ -102,10 +104,12 @@ func newBlockingPickerModel(beanID, beanTitle string, currentBlocking []string, 
 	// Fetch all beans
 	allBeans, _ := resolver.Query().Beans(context.Background(), nil)
 
-	// Create a set of currently blocked IDs for quick lookup
-	blockingSet := make(map[string]bool)
+	// Create maps for original and pending state
+	originalBlocking := make(map[string]bool)
+	pendingBlocking := make(map[string]bool)
 	for _, id := range currentBlocking {
-		blockingSet[id] = true
+		originalBlocking[id] = true
+		pendingBlocking[id] = true
 	}
 
 	// Filter out the current bean and build items
@@ -138,7 +142,7 @@ func newBlockingPickerModel(beanID, beanTitle string, currentBlocking []string, 
 		items = append(items, blockingItem{
 			bean:       b,
 			cfg:        cfg,
-			isBlocking: blockingSet[b.ID],
+			isBlocking: pendingBlocking[b.ID],
 		})
 	}
 
@@ -160,12 +164,14 @@ func newBlockingPickerModel(beanID, beanTitle string, currentBlocking []string, 
 	l.Styles.FilterCursor = lipgloss.NewStyle().Foreground(ui.ColorPrimary)
 
 	return blockingPickerModel{
-		list:            l,
-		beanID:          beanID,
-		beanTitle:       beanTitle,
-		currentBlocking: currentBlocking,
-		width:           width,
-		height:          height,
+		list:             l,
+		beanID:           beanID,
+		beanTitle:        beanTitle,
+		originalBlocking: originalBlocking,
+		pendingBlocking:  pendingBlocking,
+		cfg:              cfg,
+		width:            width,
+		height:           height,
 	}
 }
 
@@ -189,18 +195,65 @@ func (m blockingPickerModel) Update(msg tea.Msg) (blockingPickerModel, tea.Cmd) 
 	case tea.KeyMsg:
 		if m.list.FilterState() != list.Filtering {
 			switch msg.String() {
-			case "enter":
+			case " ":
+				// Toggle the selected item locally
 				if item, ok := m.list.SelectedItem().(blockingItem); ok {
-					// Toggle the blocking relationship
-					return m, func() tea.Msg {
-						return blockingToggledMsg{
-							beanID:   m.beanID,
-							targetID: item.bean.ID,
-							added:    !item.isBlocking, // toggle
+					targetID := item.bean.ID
+					currentIndex := m.list.Index()
+
+					// Toggle pending state
+					if m.pendingBlocking[targetID] {
+						delete(m.pendingBlocking, targetID)
+					} else {
+						m.pendingBlocking[targetID] = true
+					}
+
+					// Update the list items to reflect new state
+					items := m.list.Items()
+					for i, listItem := range items {
+						if bi, ok := listItem.(blockingItem); ok {
+							items[i] = blockingItem{
+								bean:       bi.bean,
+								cfg:        bi.cfg,
+								isBlocking: m.pendingBlocking[bi.bean.ID],
+							}
 						}
 					}
+					m.list.SetItems(items)
+
+					// Restore selection position
+					m.list.Select(currentIndex)
 				}
+				return m, nil
+
+			case "enter":
+				// Confirm changes - compute diff and send message
+				var toAdd, toRemove []string
+
+				// Find additions (in pending but not in original)
+				for id := range m.pendingBlocking {
+					if !m.originalBlocking[id] {
+						toAdd = append(toAdd, id)
+					}
+				}
+
+				// Find removals (in original but not in pending)
+				for id := range m.originalBlocking {
+					if !m.pendingBlocking[id] {
+						toRemove = append(toRemove, id)
+					}
+				}
+
+				return m, func() tea.Msg {
+					return blockingConfirmedMsg{
+						beanID:   m.beanID,
+						toAdd:    toAdd,
+						toRemove: toRemove,
+					}
+				}
+
 			case "esc", "backspace":
+				// Cancel - discard changes
 				return m, func() tea.Msg {
 					return closeBlockingPickerMsg{}
 				}
@@ -222,7 +275,7 @@ func (m blockingPickerModel) View() string {
 		BeanTitle:   m.beanTitle,
 		BeanID:      m.beanID,
 		ListContent: m.list.View(),
-		Description: "● = blocking, ○ = not blocking",
+		Description: "space toggle, enter confirm, esc cancel",
 		Width:       m.width,
 		WidthPct:    60,
 		MaxWidth:    80,

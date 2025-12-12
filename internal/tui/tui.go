@@ -255,24 +255,31 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.state = a.previousState
 		return a, a.list.loadBeans
 
-	case blockingToggledMsg:
-		// Toggle the blocking relationship via GraphQL mutation
-		var err error
-		if msg.added {
-			_, err = a.resolver.Mutation().AddBlocking(context.Background(), msg.beanID, msg.targetID)
-		} else {
-			_, err = a.resolver.Mutation().RemoveBlocking(context.Background(), msg.beanID, msg.targetID)
+	case blockingConfirmedMsg:
+		// Apply all blocking changes via GraphQL mutations
+		for _, targetID := range msg.toAdd {
+			_, err := a.resolver.Mutation().AddBlocking(context.Background(), msg.beanID, targetID)
+			if err != nil {
+				// Continue with other changes even if one fails
+				continue
+			}
 		}
-		if err != nil {
-			// Stay in picker on error
-			return a, nil
+		for _, targetID := range msg.toRemove {
+			_, err := a.resolver.Mutation().RemoveBlocking(context.Background(), msg.beanID, targetID)
+			if err != nil {
+				// Continue with other changes even if one fails
+				continue
+			}
 		}
-		// Refresh the picker to show updated state
-		updatedBean, _ := a.resolver.Query().Bean(context.Background(), msg.beanID)
-		if updatedBean != nil {
-			a.blockingPicker = newBlockingPickerModel(msg.beanID, updatedBean.Title, updatedBean.Blocking, a.resolver, a.config, a.width, a.height)
+		// Return to previous view and refresh
+		a.state = a.previousState
+		if a.state == viewDetail {
+			updatedBean, _ := a.resolver.Query().Bean(context.Background(), msg.beanID)
+			if updatedBean != nil {
+				a.detail = newDetailModel(updatedBean, a.resolver, a.config, a.width, a.height)
+			}
 		}
-		return a, nil
+		return a, a.list.loadBeans
 
 	case parentSelectedMsg:
 		// Set the new parent via GraphQL mutation
