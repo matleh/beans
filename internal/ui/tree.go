@@ -169,7 +169,8 @@ func calculateMaxDepth(nodes []*TreeNode) int {
 }
 
 // RenderTree renders the tree as an ASCII tree with styled columns.
-func RenderTree(nodes []*TreeNode, cfg *config.Config, maxIDWidth int, hasTags bool) string {
+// termWidth is used to calculate responsive column widths.
+func RenderTree(nodes []*TreeNode, cfg *config.Config, maxIDWidth int, hasTags bool, termWidth int) string {
 	var sb strings.Builder
 
 	// Calculate max depth to determine ID column width
@@ -184,48 +185,79 @@ func RenderTree(nodes []*TreeNode, cfg *config.Config, maxIDWidth int, hasTags b
 		treeColWidth = maxIDWidth + maxDepth*treeIndent
 	}
 
+	// Calculate responsive columns based on terminal width
+	// Adjust for tree column width vs default ID column width
+	adjustedWidth := termWidth - treeColWidth + ColWidthID
+	cols := CalculateResponsiveColumns(adjustedWidth, hasTags)
+
+	// Calculate title width from remaining space
+	// Account for: tree/ID col, type col, status col, priority symbol (2), space before tags (1)
+	titleWidth := termWidth - treeColWidth - ColWidthType - ColWidthStatus - 3
+	if cols.ShowTags {
+		titleWidth -= cols.Tags
+	}
+	if titleWidth < 20 {
+		titleWidth = 20
+	}
+
 	// Header with manual padding (lipgloss Width doesn't handle styled strings well)
 	headerCol := lipgloss.NewStyle().Foreground(ColorMuted)
 	idHeader := headerCol.Render("ID") + strings.Repeat(" ", treeColWidth-2)
-	typeHeader := headerCol.Render("TYPE") + strings.Repeat(" ", 12-4)
-	statusHeader := headerCol.Render("STATUS") + strings.Repeat(" ", 14-6)
+	typeHeader := headerCol.Render("TYPE") + strings.Repeat(" ", ColWidthType-4)
+	statusHeader := headerCol.Render("STATUS") + strings.Repeat(" ", ColWidthStatus-6)
 
 	header := idHeader + typeHeader + statusHeader + headerCol.Render("TITLE")
-	dividerWidth := treeColWidth + 12 + 14 + 50
+	if cols.ShowTags && titleWidth > 5 {
+		header += strings.Repeat(" ", titleWidth-5+3) + headerCol.Render("TAGS") // +3 for priority/spacing
+	}
+	dividerWidth := termWidth - 1 // -1 to avoid wrapping on exact terminal width
 	sb.WriteString(header)
 	sb.WriteString("\n")
 	sb.WriteString(Muted.Render(strings.Repeat("─", dividerWidth)))
 	sb.WriteString("\n")
 
+	// Build render config from responsive columns
+	renderCfg := treeRenderConfig{
+		treeColWidth: treeColWidth,
+		titleWidth:   titleWidth,
+		cols:         cols,
+	}
+
 	// Render nodes (depth 0 = root level, no ancestry yet)
-	renderNodes(&sb, nodes, 0, nil, cfg, treeColWidth, hasTags)
+	renderNodes(&sb, nodes, 0, nil, cfg, renderCfg)
 
 	return sb.String()
+}
+
+// treeRenderConfig holds computed rendering configuration for tree output
+type treeRenderConfig struct {
+	treeColWidth int
+	titleWidth   int
+	cols         ResponsiveColumns
 }
 
 // renderNodes recursively renders tree nodes with proper indentation.
 // depth 0 = root level (no connector), depth 1+ = nested (has connector)
 // ancestry tracks whether each parent level was a last child (true = last, no continuation line needed)
-func renderNodes(sb *strings.Builder, nodes []*TreeNode, depth int, ancestry []bool, cfg *config.Config, treeColWidth int, hasTags bool) {
+func renderNodes(sb *strings.Builder, nodes []*TreeNode, depth int, ancestry []bool, cfg *config.Config, renderCfg treeRenderConfig) {
 	for i, node := range nodes {
 		isLast := i == len(nodes)-1
-		renderNode(sb, node, depth, isLast, ancestry, cfg, treeColWidth, hasTags)
+		renderNode(sb, node, depth, isLast, ancestry, cfg, renderCfg)
 		// Only add to ancestry when depth > 0 (roots have no connectors to continue)
 		if len(node.Children) > 0 {
 			var newAncestry []bool
 			if depth > 0 {
 				newAncestry = append(ancestry, isLast)
 			}
-			renderNodes(sb, node.Children, depth+1, newAncestry, cfg, treeColWidth, hasTags)
+			renderNodes(sb, node.Children, depth+1, newAncestry, cfg, renderCfg)
 		}
 	}
 }
 
 // renderNode renders a single tree node with tree connectors.
-// treeColWidth is the fixed width of the ID column (includes space for tree connectors).
 // depth 0 = root (no connector), depth 1+ = nested (has connector)
 // ancestry tracks whether each parent level was a last child (true = last, no continuation line needed)
-func renderNode(sb *strings.Builder, node *TreeNode, depth int, isLast bool, ancestry []bool, cfg *config.Config, treeColWidth int, hasTags bool) {
+func renderNode(sb *strings.Builder, node *TreeNode, depth int, isLast bool, ancestry []bool, cfg *config.Config, renderCfg treeRenderConfig) {
 	b := node.Bean
 
 	// Build tree prefix from ancestry
@@ -248,21 +280,22 @@ func renderNode(sb *strings.Builder, node *TreeNode, depth int, isLast bool, anc
 	// Get colors from config
 	colors := cfg.GetBeanColors(b.Status, b.Type, b.Priority)
 
-	// Use shared RenderBeanRow function
+	// Use shared RenderBeanRow function with responsive columns
 	row := RenderBeanRow(b.ID, b.Status, b.Type, b.Title, BeanRowConfig{
 		StatusColor:   colors.StatusColor,
 		TypeColor:     colors.TypeColor,
 		PriorityColor: colors.PriorityColor,
 		Priority:      b.Priority,
 		IsArchive:     colors.IsArchive,
-		MaxTitleWidth: 50,
+		MaxTitleWidth: renderCfg.titleWidth,
 		ShowCursor:    false,
 		Tags:          b.Tags,
-		ShowTags:      hasTags,
-		MaxTags:       1,
+		ShowTags:      renderCfg.cols.ShowTags,
+		TagsColWidth:  renderCfg.cols.Tags,
+		MaxTags:       renderCfg.cols.MaxTags,
 		TreePrefix:    prefix,
 		Dimmed:        !node.Matched,
-		IDColWidth:    treeColWidth,
+		IDColWidth:    renderCfg.treeColWidth,
 	})
 
 	sb.WriteString(row)

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/hmans/beans/internal/bean"
@@ -12,6 +13,7 @@ import (
 	"github.com/hmans/beans/internal/output"
 	"github.com/hmans/beans/internal/ui"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -159,7 +161,13 @@ Search Syntax (--search/-S):
 			}
 		}
 
-		fmt.Print(ui.RenderTree(tree, cfg, maxIDWidth, hasTags))
+		// Detect terminal width (default to 80 if not a terminal)
+		termWidth := 80
+		if w, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil && w > 0 {
+			termWidth = w
+		}
+
+		fmt.Print(ui.RenderTree(tree, cfg, maxIDWidth, hasTags, termWidth))
 		return nil
 	},
 }
