@@ -98,6 +98,20 @@ You can use Beans with other coding agents by configuring them to run `beans pri
 
 ## Usage Hints
 
+As a human, you can get an overview of the CLI's functionalities by running:
+
+```bash
+beans help
+```
+
+You might specifically be interested in the interactive TUI:
+
+```bash
+beans tui
+```
+
+**But the real power of Beans** comes from letting your coding agent manage your tasks for you.
+
 Assuming you have integrated Beans into your coding agent correctly, it will already know how to create and manage beans for you. You can use the usual assortment of natural language inquiries. If you've just
 added Beans to an existing project, you could try asking your agent to identify potential tasks and create beans for them:
 
@@ -110,78 +124,6 @@ If you already have some beans available, you can ask your agent to recommend wh
 You can also specifically ask it to start working on a particular bean:
 
 > "It's time to tackle myproj-123."
-
-## TUI (Terminal User Interface)
-
-Launch the interactive TUI with:
-
-```bash
-beans tui
-```
-
-### Keyboard Shortcuts
-
-**List View:**
-
-| Key | Action |
-|-----|--------|
-| `j`/`k`, `↓`/`↑` | Navigate up/down |
-| `enter` | View bean details |
-| `c` | Create new bean |
-| `e` | Edit bean in $EDITOR |
-| `s` | Change status |
-| `t` | Change type |
-| `P` | Change priority |
-| `p` | Set parent |
-| `b` | Manage blocking relationships |
-| `/` | Filter list |
-| `g t` | Go to tags (filter by tag) |
-| `esc` | Clear filter |
-| `?` | Show help overlay |
-| `q` | Quit |
-
-**Detail View:**
-
-| Key | Action |
-|-----|--------|
-| `j`/`k`, `↓`/`↑` | Scroll up/down |
-| `tab` | Switch focus (links/body) |
-| `enter` | Navigate to linked bean |
-| `e` | Edit bean in $EDITOR |
-| `s` | Change status |
-| `t` | Change type |
-| `P` | Change priority |
-| `p` | Set parent |
-| `b` | Manage blocking relationships |
-| `?` | Show help overlay |
-| `esc`/`backspace` | Back to list/previous bean |
-| `q` | Quit |
-
-## GraphQL Queries
-
-For advanced queries and mutations, use the `beans graphql` command:
-
-```bash
-# List all beans with basic info
-beans graphql '{ beans { id title status type priority } }'
-
-# Find high-priority bugs
-beans graphql '{ beans(filter: { type: ["bug"], priority: ["critical", "high"] }) { id title status body } }'
-
-# Search by text
-beans graphql '{ beans(filter: { search: "authentication" }) { id title } }'
-
-# Get a specific bean with its relationships
-beans graphql '{ bean(id: "beans-abc") { title parent { title } children { title status } blockedBy { title } } }'
-
-# Create a new bean
-beans graphql 'mutation { createBean(input: { title: "Fix bug", type: "bug", status: "todo" }) { id title } }'
-
-# Update a bean
-beans graphql 'mutation { updateBean(id: "beans-abc", input: { status: "completed" }) { id status } }'
-```
-
-Use `beans graphql --schema` to print the full GraphQL schema.
 
 ## Contributing
 
