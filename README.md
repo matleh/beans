@@ -30,6 +30,7 @@ Since Beans emits its own prompt instructions for your coding agent, most change
 - **Plain old Markdown files** stored in a `.beans` directory in your project. Easy to version control, readable and editable by humans and machines alike!
 - Use the `beans` CLI to create, list, view, update, and archive beans; but more importantly, **let your coding agent do it for you**!
 - **Supercharge your robot friend** with full context about your project and its open tasks. A built-in **GraphQL query engine** allows your agent to get exactly the information it needs, keeping token use to a minimum.
+- **Project memory**: Completed beans are archived and serve as project memory that your coding agent can query for context about past work.
 - A beautiful **built-in** TUI for browsing and managing your beans from the terminal.
 - Generates a **Markdown roadmap document** for your project from your data.
 
@@ -114,6 +115,8 @@ You might specifically be interested in the interactive TUI:
 beans tui
 ```
 
+### Example Workflows
+
 **But the real power of Beans** comes from letting your coding agent manage your tasks for you.
 
 Assuming you have integrated Beans into your coding agent correctly, it will already know how to create and manage beans for you. You can use the usual assortment of natural language inquiries. If you've just
@@ -128,6 +131,14 @@ If you already have some beans available, you can ask your agent to recommend wh
 You can also specifically ask it to start working on a particular bean:
 
 > "It's time to tackle myproj-123."
+
+Consider that your agent will be just as capable to deal with beans as it is with code, so how about using it to quickly restructure your tasks?
+
+> "Please inspect this project's beans and reorganize them into epics. Also please create 2-3 milestones to group these epics in a meaningful way."
+
+You can also add Beans-specific instructions to your `AGENTS.md`, `CLAUDE.md` or equivalent file, for example:
+
+> "When making a commit, include the relevant bean IDs in the commit message"
 
 ## Contributing
 
