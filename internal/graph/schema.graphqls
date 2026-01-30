@@ -94,8 +94,12 @@ input UpdateBeanInput {
   type: String
   "New priority"
   priority: String
-  "Replace all tags (nil preserves existing)"
+  "Replace all tags (nil preserves existing, mutually exclusive with addTags/removeTags)"
   tags: [String!]
+  "Add tags to existing list"
+  addTags: [String!]
+  "Remove tags from existing list"
+  removeTags: [String!]
   "New body content (full replacement, mutually exclusive with bodyMod)"
   body: String
   "Structured body modifications (mutually exclusive with body)"

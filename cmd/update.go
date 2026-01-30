@@ -191,8 +191,13 @@ func buildUpdateInput(cmd *cobra.Command, existingTags []string, currentBody str
 		changes = append(changes, "body")
 	}
 
-	if len(updateTag) > 0 || len(updateRemoveTag) > 0 {
-		input.Tags = mergeTags(existingTags, updateTag, updateRemoveTag)
+	// Handle tags using granular add/remove (consistent with relationships)
+	if len(updateTag) > 0 {
+		input.AddTags = updateTag
+		changes = append(changes, "tags")
+	}
+	if len(updateRemoveTag) > 0 {
+		input.RemoveTags = updateRemoveTag
 		changes = append(changes, "tags")
 	}
 
@@ -233,6 +238,7 @@ func buildUpdateInput(cmd *cobra.Command, existingTags []string, currentBody str
 func hasFieldUpdates(input model.UpdateBeanInput) bool {
 	return input.Status != nil || input.Type != nil || input.Priority != nil ||
 		input.Title != nil || input.Body != nil || input.BodyMod != nil || input.Tags != nil ||
+		input.AddTags != nil || input.RemoveTags != nil ||
 		input.Parent != nil || input.AddBlocking != nil || input.RemoveBlocking != nil ||
 		input.AddBlockedBy != nil || input.RemoveBlockedBy != nil
 }

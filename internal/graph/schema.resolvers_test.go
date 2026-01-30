@@ -2217,6 +2217,101 @@ func TestUpdateBeanWithRelationships(t *testing.T) {
 			t.Errorf("BlockedBy = %v, want [new-blocker]", got.BlockedBy)
 		}
 	})
+
+	t.Run("add tags", func(t *testing.T) {
+		task := &bean.Bean{ID: "task-tags-1", Title: "Task", Type: "task", Status: "todo", Tags: []string{"existing"}}
+		core.Create(task)
+
+		input := model.UpdateBeanInput{
+			AddTags: []string{"new1", "new2"},
+		}
+
+		got, err := resolver.Mutation().UpdateBean(ctx, "task-tags-1", input)
+		if err != nil {
+			t.Fatalf("UpdateBean() error = %v", err)
+		}
+
+		if len(got.Tags) != 3 {
+			t.Errorf("Tags count = %d, want 3", len(got.Tags))
+		}
+		tagSet := make(map[string]bool)
+		for _, tag := range got.Tags {
+			tagSet[tag] = true
+		}
+		if !tagSet["existing"] || !tagSet["new1"] || !tagSet["new2"] {
+			t.Errorf("Tags = %v, want [existing new1 new2]", got.Tags)
+		}
+	})
+
+	t.Run("remove tags", func(t *testing.T) {
+		task := &bean.Bean{ID: "task-tags-2", Title: "Task", Type: "task", Status: "todo", Tags: []string{"tag1", "tag2", "tag3"}}
+		core.Create(task)
+
+		input := model.UpdateBeanInput{
+			RemoveTags: []string{"tag2"},
+		}
+
+		got, err := resolver.Mutation().UpdateBean(ctx, "task-tags-2", input)
+		if err != nil {
+			t.Fatalf("UpdateBean() error = %v", err)
+		}
+
+		if len(got.Tags) != 2 {
+			t.Errorf("Tags count = %d, want 2", len(got.Tags))
+		}
+		for _, tag := range got.Tags {
+			if tag == "tag2" {
+				t.Error("Tag 'tag2' should have been removed")
+			}
+		}
+	})
+
+	t.Run("add and remove tags in one operation", func(t *testing.T) {
+		task := &bean.Bean{ID: "task-tags-3", Title: "Task", Type: "task", Status: "todo", Tags: []string{"old1", "old2", "keep"}}
+		core.Create(task)
+
+		input := model.UpdateBeanInput{
+			AddTags:    []string{"new1", "new2"},
+			RemoveTags: []string{"old1", "old2"},
+		}
+
+		got, err := resolver.Mutation().UpdateBean(ctx, "task-tags-3", input)
+		if err != nil {
+			t.Fatalf("UpdateBean() error = %v", err)
+		}
+
+		if len(got.Tags) != 3 {
+			t.Errorf("Tags count = %d, want 3", len(got.Tags))
+		}
+		tagSet := make(map[string]bool)
+		for _, tag := range got.Tags {
+			tagSet[tag] = true
+		}
+		if !tagSet["keep"] || !tagSet["new1"] || !tagSet["new2"] {
+			t.Errorf("Tags = %v, want [keep new1 new2]", got.Tags)
+		}
+		if tagSet["old1"] || tagSet["old2"] {
+			t.Errorf("Tags = %v, should not contain old1 or old2", got.Tags)
+		}
+	})
+
+	t.Run("tags and addTags are mutually exclusive", func(t *testing.T) {
+		task := &bean.Bean{ID: "task-tags-4", Title: "Task", Type: "task", Status: "todo"}
+		core.Create(task)
+
+		input := model.UpdateBeanInput{
+			Tags:    []string{"tag1"},
+			AddTags: []string{"tag2"},
+		}
+
+		_, err := resolver.Mutation().UpdateBean(ctx, "task-tags-4", input)
+		if err == nil {
+			t.Error("UpdateBean() should fail when both tags and addTags are specified")
+		}
+		if !strings.Contains(err.Error(), "cannot specify both") {
+			t.Errorf("Error should mention conflict, got: %v", err)
+		}
+	})
 }
 
 // Helper function for tests
