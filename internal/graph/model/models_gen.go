@@ -116,8 +116,12 @@ type UpdateBeanInput struct {
 	Type *string `json:"type,omitempty"`
 	// New priority
 	Priority *string `json:"priority,omitempty"`
-	// Replace all tags (nil preserves existing)
+	// Replace all tags (nil preserves existing, mutually exclusive with addTags/removeTags)
 	Tags []string `json:"tags,omitempty"`
+	// Add tags to existing list
+	AddTags []string `json:"addTags,omitempty"`
+	// Remove tags from existing list
+	RemoveTags []string `json:"removeTags,omitempty"`
 	// New body content (full replacement, mutually exclusive with bodyMod)
 	Body *string `json:"body,omitempty"`
 	// Structured body modifications (mutually exclusive with body)
