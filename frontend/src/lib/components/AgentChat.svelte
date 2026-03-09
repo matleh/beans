@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { AgentChatStore } from '$lib/agentChat.svelte';
+	import { beansStore } from '$lib/beans.svelte';
+	import { ui } from '$lib/uiState.svelte';
 	import { renderMarkdown } from '$lib/markdown';
 	import { onDestroy } from 'svelte';
 
@@ -78,13 +80,24 @@
 			send();
 		}
 	}
+
+	function handleBeanLinkClick(e: MouseEvent) {
+		const target = (e.target as HTMLElement).closest<HTMLElement>('[data-bean-id]');
+		if (!target) return;
+		e.preventDefault();
+		const linkedBean = beansStore.get(target.dataset.beanId!);
+		if (linkedBean) ui.selectBean(linkedBean);
+	}
 </script>
 
 <div class="flex flex-col h-full font-mono text-sm">
 	<!-- Messages area -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		bind:this={messagesEl}
 		class="flex-1 overflow-y-auto p-4 space-y-3"
+		onclick={handleBeanLinkClick}
 	>
 		{#if messages.length === 0}
 			<div class="flex items-center justify-center h-full text-text-faint">

@@ -7,6 +7,10 @@ a,
 	cursor: pointer;
 }
 
+.bean-link {
+	@apply inline-flex cursor-pointer rounded bg-accent/10 px-1 align-baseline font-mono text-[0.85em] whitespace-nowrap text-accent no-underline transition-colors hover:border-accent/45 hover:bg-accent/20;
+}
+
 /* ── Light palette (default) ─────────────────── */
 :root {
 	color-scheme: light dark;

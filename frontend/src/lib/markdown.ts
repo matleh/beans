@@ -117,6 +117,39 @@ function shikiExtension(hl: HighlighterCore): MarkedExtension {
 }
 
 /**
+ * Marked extension that auto-links bean IDs (e.g. beans-s1m0) in inline text.
+ * Renders as <a data-bean-id="beans-xxxx"> so click handlers can navigate.
+ */
+function beanLinkExtension(): MarkedExtension {
+	return {
+		extensions: [
+			{
+				name: 'beanLink',
+				level: 'inline',
+				start(src: string) {
+					return src.match(/beans-/)?.index;
+				},
+				tokenizer(src: string) {
+					const match = src.match(/^beans-[a-z0-9]{4}\b/);
+					if (match) {
+						return {
+							type: 'beanLink',
+							raw: match[0],
+							beanId: match[0]
+						};
+					}
+					return undefined;
+				},
+				renderer(token) {
+					const beanId = (token as Record<string, unknown>).beanId as string;
+					return `<a data-bean-id="${beanId}" class="bean-link">${beanId}</a>`;
+				}
+			}
+		]
+	};
+}
+
+/**
  * Render markdown to HTML with syntax highlighting.
  * Falls back to plain code blocks during SSR.
  */
@@ -125,6 +158,7 @@ export async function renderMarkdown(content: string): Promise<string> {
 
 	const md = new Marked();
 	md.use({ gfm: true, breaks: true });
+	md.use(beanLinkExtension());
 
 	const hl = await getHighlighter();
 	if (hl) {

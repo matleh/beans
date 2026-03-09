@@ -2,6 +2,7 @@
 	import type { Bean } from '$lib/beans.svelte';
 	import { beansStore } from '$lib/beans.svelte';
 	import { worktreeStore } from '$lib/worktrees.svelte';
+	import { ui } from '$lib/uiState.svelte';
 	import { renderMarkdown } from '$lib/markdown';
 	import ConfirmModal from './ConfirmModal.svelte';
 
@@ -101,6 +102,14 @@
 			worktreeError = worktreeStore.error;
 		}
 		removingWorktree = false;
+	}
+
+	function handleBeanLinkClick(e: MouseEvent) {
+		const target = (e.target as HTMLElement).closest<HTMLElement>('[data-bean-id]');
+		if (!target) return;
+		e.preventDefault();
+		const linkedBean = beansStore.get(target.dataset.beanId!);
+		if (linkedBean) ui.selectBean(linkedBean);
 	}
 </script>
 
@@ -289,7 +298,9 @@
 
 	<!-- Body -->
 	{#if bean.body}
-		<div class="mb-6">
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="mb-6" onclick={handleBeanLinkClick}>
 			<h2 class="text-xs font-semibold text-text-muted uppercase mb-2">Description</h2>
 			<div class="bean-body prose prose-sm max-w-none">
 				{@html renderedBody}
