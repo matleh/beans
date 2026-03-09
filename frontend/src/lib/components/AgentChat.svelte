@@ -118,7 +118,7 @@
 				{:else if getRenderedContent(i)}
 					<div class="flex gap-2">
 						<span class="shrink-0 text-text-muted select-none">&middot;</span>
-						<div class="agent-prose prose prose-sm max-w-none text-text min-w-0">
+						<div class="agent-prose prose max-w-none text-text min-w-0">
 							{@html getRenderedContent(i)}
 						</div>
 					</div>
@@ -224,5 +224,12 @@
 	.agent-prose :global(h6) {
 		font-size: inherit;
 		font-weight: bold;
+	}
+
+	.agent-prose :global(code:not(pre code)) {
+		color: var(--th-text);
+		background-color: var(--th-md-code-bg);
+		padding: 0.125rem 0.375rem;
+		border-radius: 0.25rem;
 	}
 </style>

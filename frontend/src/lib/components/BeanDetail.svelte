@@ -302,7 +302,7 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="mb-6" onclick={handleBeanLinkClick}>
 			<h2 class="text-xs font-semibold text-text-muted uppercase mb-2">Description</h2>
-			<div class="bean-body prose prose-sm max-w-none">
+			<div class="bean-body prose max-w-none">
 				{@html renderedBody}
 			</div>
 		</div>
@@ -397,6 +397,7 @@
 	}
 
 	.bean-body :global(code:not(pre code)) {
+		color: var(--th-text);
 		background-color: var(--th-md-code-bg);
 		padding: 0.125rem 0.375rem;
 		border-radius: 0.25rem;

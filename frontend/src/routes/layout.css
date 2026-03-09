@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@plugin '@tailwindcss/typography';
 
 button,
 a,
@@ -9,6 +8,76 @@ a,
 
 .bean-link {
 	@apply inline-flex cursor-pointer rounded bg-accent/10 px-1 align-baseline font-mono text-[0.85em] whitespace-nowrap text-accent no-underline transition-colors hover:border-accent/45 hover:bg-accent/20;
+}
+
+/* ── Prose: markdown body styling ────────────── */
+.prose {
+	@apply text-sm leading-relaxed text-text;
+}
+
+.prose :is(p, ul, ol, blockquote, pre, hr, table) {
+	@apply my-3;
+}
+
+.prose :is(h1, h2, h3, h4, h5, h6) {
+	@apply my-3 first:mt-0;
+}
+
+.prose :is(p, li):first-child {
+	@apply mt-0;
+}
+
+.prose :is(p, li):last-child {
+	@apply mb-0;
+}
+
+.prose a:not(.bean-link) {
+	@apply text-accent underline underline-offset-2 decoration-accent/40 hover:decoration-accent;
+}
+
+.prose strong {
+	@apply font-semibold text-text;
+}
+
+.prose ul {
+	@apply list-disc pl-6;
+}
+
+.prose ol {
+	@apply list-decimal pl-6;
+}
+
+.prose li {
+	@apply my-1;
+}
+
+.prose li > ul,
+.prose li > ol {
+	@apply my-1;
+}
+
+.prose blockquote {
+	@apply border-l-2 border-border pl-4 text-text-muted italic;
+}
+
+.prose hr {
+	@apply border-border;
+}
+
+.prose table {
+	@apply w-full text-left text-sm;
+}
+
+.prose th {
+	@apply border-b border-border px-3 py-1.5 font-semibold text-text;
+}
+
+.prose td {
+	@apply border-b border-border/50 px-3 py-1.5;
+}
+
+.prose img {
+	@apply rounded my-3;
 }
 
 /* ── Light palette (default) ─────────────────── */
@@ -72,55 +141,55 @@ a,
 /* ── Dark palette ────────────────────────────── */
 @media (prefers-color-scheme: dark) {
 	:root {
-		--th-surface: #18181b;
-		--th-surface-alt: #1e1e22;
-		--th-surface-dim: #27272a;
+		--th-surface: #1f1f23;
+		--th-surface-alt: #26262b;
+		--th-surface-dim: #2e2e33;
 		--th-border: #3f3f46;
-		--th-text: #e4e4e7;
+		--th-text: #d4d4d8;
 		--th-text-muted: #a1a1aa;
 		--th-text-faint: #71717a;
-		--th-accent: #818cf8;
+		--th-accent: #8b93e8;
 		--th-accent-text: #ffffff;
-		--th-danger: #ef4444;
-		--th-warning: #f59e0b;
-		--th-success: #22c55e;
-		--th-info: #3b82f6;
+		--th-danger: #e05555;
+		--th-warning: #dba030;
+		--th-success: #3dbb6a;
+		--th-info: #5a8fd6;
 
-		--th-status-draft-bg: #27272a;
+		--th-status-draft-bg: #2a2a2e;
 		--th-status-draft-text: #a1a1aa;
-		--th-status-todo-bg: #052e16;
-		--th-status-todo-text: #4ade80;
-		--th-status-in-progress-bg: #172554;
-		--th-status-in-progress-text: #60a5fa;
-		--th-status-completed-bg: #2e1065;
-		--th-status-completed-text: #c084fc;
-		--th-status-scrapped-bg: #450a0a;
-		--th-status-scrapped-text: #f87171;
-		--th-status-blocked-bg: #422006;
-		--th-status-blocked-text: #fbbf24;
+		--th-status-todo-bg: #122b1e;
+		--th-status-todo-text: #6ec992;
+		--th-status-in-progress-bg: #1c2744;
+		--th-status-in-progress-text: #7aade0;
+		--th-status-completed-bg: #291848;
+		--th-status-completed-text: #b494e0;
+		--th-status-scrapped-bg: #371414;
+		--th-status-scrapped-text: #e08888;
+		--th-status-blocked-bg: #352010;
+		--th-status-blocked-text: #dbb060;
 
-		--th-type-milestone-bg: #3b0764;
-		--th-type-milestone-text: #d8b4fe;
-		--th-type-milestone-border: #a855f7;
-		--th-type-epic-bg: #1e1b4b;
-		--th-type-epic-text: #a5b4fc;
-		--th-type-epic-border: #6366f1;
-		--th-type-feature-bg: #083344;
-		--th-type-feature-text: #67e8f9;
-		--th-type-feature-border: #06b6d4;
-		--th-type-bug-bg: #450a0a;
-		--th-type-bug-text: #fca5a5;
-		--th-type-bug-border: #ef4444;
-		--th-type-task-bg: #27272a;
+		--th-type-milestone-bg: #2e1548;
+		--th-type-milestone-text: #c8aade;
+		--th-type-milestone-border: #9466cc;
+		--th-type-epic-bg: #1e1d3d;
+		--th-type-epic-text: #a0aade;
+		--th-type-epic-border: #6e70cc;
+		--th-type-feature-bg: #122e38;
+		--th-type-feature-text: #74ccdb;
+		--th-type-feature-border: #2a9db5;
+		--th-type-bug-bg: #371414;
+		--th-type-bug-text: #dba0a0;
+		--th-type-bug-border: #d05555;
+		--th-type-task-bg: #2a2a2e;
 		--th-type-task-text: #a1a1aa;
 		--th-type-task-border: #3f3f46;
 
-		--th-md-h1: #93c5fd;
-		--th-md-h2: #7dd3fc;
-		--th-md-h3: #6ee7b7;
+		--th-md-h1: #8db5db;
+		--th-md-h2: #7dbbd6;
+		--th-md-h3: #70ccab;
 		--th-md-h456: #94a3b8;
 		--th-md-h1-border: #3f3f46;
-		--th-md-code-bg: #27272a;
+		--th-md-code-bg: #2a2a2e;
 	}
 }
 
