@@ -31,18 +31,15 @@
 	}
 </script>
 
-<div class="flex flex-col h-full bg-surface">
-	<!-- Tab bar -->
-	<div class="flex items-center px-4 h-10 border-b border-border shrink-0">
+<div class="flex h-full flex-col bg-surface">
+	<div class="toolbar">
 		<div class="flex">
 			<button
 				onclick={() => setTab('bean')}
 				class={[
-					"px-3 py-1 text-sm font-medium border transition-colors",
-					hasWorktree ? "rounded-l-md" : "rounded-md",
-					activeTab === "bean"
-						? "bg-accent text-accent-text border-accent"
-						: "bg-surface border-border text-text-muted hover:bg-surface-alt"
+					'btn-tab',
+					hasWorktree ? 'rounded-l-md' : 'rounded-md',
+					activeTab === 'bean' ? 'btn-tab-active' : 'btn-tab-inactive'
 				]}
 			>
 				Bean
@@ -51,10 +48,8 @@
 				<button
 					onclick={() => setTab('chat')}
 					class={[
-						"px-3 py-1 text-sm font-medium rounded-r-md border border-l-0 transition-colors",
-						activeTab === "chat"
-							? "bg-accent text-accent-text border-accent"
-							: "bg-surface border-border text-text-muted hover:bg-surface-alt"
+						'btn-tab rounded-r-md border-l-0',
+						activeTab === 'chat' ? 'btn-tab-active' : 'btn-tab-inactive'
 					]}
 				>
 					Chat
@@ -63,18 +58,13 @@
 		</div>
 		{#if onClose}
 			<div class="flex-1"></div>
-			<button
-				onclick={onClose}
-				class="w-6 h-6 flex items-center justify-center rounded text-text-muted hover:text-text hover:bg-surface-alt transition-colors"
-				title="Close"
-			>
+			<button onclick={onClose} class="btn-icon" title="Close">
 				&#x2715;
 			</button>
 		{/if}
 	</div>
 
-	<!-- Tab content -->
-	<div class="flex-1 min-h-0">
+	<div class="min-h-0 flex-1">
 		{#if activeTab === 'bean'}
 			<BeanDetail {bean} {onSelect} {onEdit} />
 		{:else if activeTab === 'chat' && hasWorktree}
