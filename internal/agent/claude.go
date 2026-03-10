@@ -148,15 +148,19 @@ func (m *Manager) spawnAndRun(beanID string, session *Session) {
 	close(proc.done)
 
 	m.mu.Lock()
+	shouldNotify := false
 	if m.processes[beanID] == proc {
 		delete(m.processes, beanID)
 		if s, ok := m.sessions[beanID]; ok && s.Status == StatusRunning {
 			s.Status = StatusIdle
+			shouldNotify = true
 		}
 	}
 	m.mu.Unlock()
 
-	m.notify(beanID)
+	if shouldNotify {
+		m.notify(beanID)
+	}
 }
 
 // readOutput reads Claude Code's stream-json output line by line,

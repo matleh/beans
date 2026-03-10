@@ -298,8 +298,8 @@
 			{/if}
 		</div>
 
-		<!-- Mode toggle -->
-		<div class="flex items-center pt-2">
+		<!-- Mode toggle + Clear -->
+		<div class="flex items-center gap-3 pt-2">
 			<div class={["flex", isRunning && 'opacity-50 pointer-events-none']}>
 				<button
 					onclick={() => setAgentMode('plan')}
@@ -338,6 +338,14 @@
 					YOLO
 				</button>
 			</div>
+
+			<button
+				onclick={() => store.clearSession(beanId)}
+				disabled={isRunning || messages.length === 0}
+				class="btn-tab-sm rounded btn-tab-sm-inactive disabled:opacity-30"
+			>
+				Clear
+			</button>
 		</div>
 	</div>
 </div>

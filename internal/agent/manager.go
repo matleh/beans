@@ -270,6 +270,35 @@ func (m *Manager) SetYoloMode(beanID string, yoloMode bool) error {
 	return nil
 }
 
+// ClearSession stops any running process, removes the session from memory,
+// and deletes the persisted conversation file.
+func (m *Manager) ClearSession(beanID string) error {
+	// Delete persisted conversation BEFORE removing the in-memory session
+	// and killing the process. This prevents a race where spawnAndRun's
+	// cleanup goroutine notifies subscribers, causing GetSession to
+	// re-materialize the session from a still-existing JSONL file.
+	if m.store != nil {
+		if err := m.store.clear(beanID); err != nil {
+			log.Printf("[agent:%s] failed to clear conversation file: %v", beanID, err)
+		}
+	}
+
+	m.mu.Lock()
+	proc, hasProc := m.processes[beanID]
+	if hasProc {
+		delete(m.processes, beanID)
+	}
+	delete(m.sessions, beanID)
+	m.mu.Unlock()
+
+	if hasProc && proc != nil {
+		proc.kill()
+	}
+
+	m.notify(beanID)
+	return nil
+}
+
 // Shutdown kills all running processes. Call on server shutdown.
 func (m *Manager) Shutdown() {
 	m.mu.Lock()

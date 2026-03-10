@@ -70,6 +70,12 @@ const SET_AGENT_YOLO_MODE = gql`
 	}
 `;
 
+const CLEAR_AGENT_SESSION = gql`
+	mutation ClearAgentSession($beanId: ID!) {
+		clearAgentSession(beanId: $beanId)
+	}
+`;
+
 export class AgentChatStore {
 	session = $state<AgentSession | null>(null);
 	sending = $state(false);
@@ -161,6 +167,19 @@ export class AgentChatStore {
 	async setYoloMode(beanId: string, yoloMode: boolean): Promise<boolean> {
 		const result = await client
 			.mutation(SET_AGENT_YOLO_MODE, { beanId, yoloMode })
+			.toPromise();
+
+		if (result.error) {
+			this.error = result.error.message;
+			return false;
+		}
+
+		return true;
+	}
+
+	async clearSession(beanId: string): Promise<boolean> {
+		const result = await client
+			.mutation(CLEAR_AGENT_SESSION, { beanId })
 			.toPromise();
 
 		if (result.error) {

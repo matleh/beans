@@ -235,6 +235,68 @@ func TestStopSession(t *testing.T) {
 	}
 }
 
+func TestClearSession_RemovesSession(t *testing.T) {
+	m := NewManager("")
+	m.sessions["test"] = &Session{
+		ID:     "test",
+		Status: StatusIdle,
+		Messages: []Message{
+			{Role: RoleUser, Content: "hello"},
+			{Role: RoleAssistant, Content: "hi there"},
+		},
+	}
+
+	err := m.ClearSession("test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, ok := m.sessions["test"]; ok {
+		t.Error("expected session to be removed from memory")
+	}
+
+	// GetSession should return nil for cleared session (no store)
+	s := m.GetSession("test")
+	if s != nil {
+		t.Errorf("expected nil after clear, got %+v", s)
+	}
+}
+
+func TestClearSession_Notifies(t *testing.T) {
+	m := NewManager("")
+	ch := m.Subscribe("test")
+	defer m.Unsubscribe("test", ch)
+
+	m.sessions["test"] = &Session{
+		ID:     "test",
+		Status: StatusIdle,
+	}
+
+	// Drain any existing notification
+	select {
+	case <-ch:
+	default:
+	}
+
+	_ = m.ClearSession("test")
+
+	select {
+	case <-ch:
+		// Good — received notification
+	default:
+		t.Error("expected notification after clear")
+	}
+}
+
+func TestClearSession_Nonexistent(t *testing.T) {
+	m := NewManager("")
+	// Should not error on clearing a session that doesn't exist
+	err := m.ClearSession("nonexistent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestSetPlanMode_CreatesSession(t *testing.T) {
 	m := NewManager("")
 

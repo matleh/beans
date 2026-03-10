@@ -145,6 +145,12 @@ type Mutation {
   (no permission prompts). Kills any running process since the flag requires respawning.
   """
   setAgentYoloMode(beanId: ID!, yoloMode: Boolean!): Boolean!
+
+  """
+  Clear the agent session for a bean. Stops any running process, removes the
+  session from memory, and deletes persisted conversation history.
+  """
+  clearAgentSession(beanId: ID!): Boolean!
 }
 
 """

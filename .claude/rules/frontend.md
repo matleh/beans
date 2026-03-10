@@ -40,6 +40,12 @@ globs: ["frontend/**"]
 - Tests run in parallel with per-test server isolation — see `e2e/fixtures.ts`.
 - Run e2e tests: `mise test:e2e` (or `bash frontend/e2e/run.sh`).
 
+## Agent Chat E2E Testing
+
+- **Never spawn Claude Code in e2e tests.** To test agent chat functionality, seed conversation data by writing JSONL files directly to `<beansPath>/conversations/<beanId>.jsonl`. The agent manager lazily loads from disk when a subscription connects with no in-memory session.
+- The central agent chat uses beanId `__central__`.
+- See `e2e/agent-chat.spec.ts` for the pattern.
+
 ## Bundle Size
 
 The frontend is embedded into the Go binary via `//go:embed`, which stores files **uncompressed**. Keep bundle size minimal:

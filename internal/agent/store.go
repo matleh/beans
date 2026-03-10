@@ -113,6 +113,15 @@ func (s *store) appendEntry(beanID string, e entry) error {
 	return err
 }
 
+// clear deletes the JSONL file for a bean, removing all persisted conversation history.
+func (s *store) clear(beanID string) error {
+	err := os.Remove(s.path(beanID))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+
 // path returns the JSONL file path for a bean.
 func (s *store) path(beanID string) string {
 	return filepath.Join(s.dir, beanID+".jsonl")

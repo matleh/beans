@@ -608,6 +608,17 @@ func (r *mutationResolver) SetAgentYoloMode(ctx context.Context, beanID string, 
 	return true, nil
 }
 
+// ClearAgentSession is the resolver for the clearAgentSession field.
+func (r *mutationResolver) ClearAgentSession(ctx context.Context, beanID string) (bool, error) {
+	if r.AgentMgr == nil {
+		return false, fmt.Errorf("agent manager not available")
+	}
+	if err := r.AgentMgr.ClearSession(beanID); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // Bean is the resolver for the bean field.
 func (r *queryResolver) Bean(ctx context.Context, id string) (*bean.Bean, error) {
 	b, err := r.Core.Get(id)
@@ -860,11 +871,20 @@ func (r *subscriptionResolver) AgentSessionChanged(ctx context.Context, beanID s
 					return
 				}
 				s := r.AgentMgr.GetSession(beanID)
-				if s == nil {
-					continue
+				var ms *model.AgentSession
+				if s != nil {
+					ms = agentSessionToModel(s)
+				} else {
+					// Session was cleared — send an empty session so the UI resets
+					ms = &model.AgentSession{
+						BeanID:    beanID,
+						AgentType: "claude",
+						Status:    model.AgentSessionStatusIdle,
+						Messages:  []*model.AgentMessage{},
+					}
 				}
 				select {
-				case out <- agentSessionToModel(s):
+				case out <- ms:
 				case <-ctx.Done():
 					return
 				}

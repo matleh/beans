@@ -99,20 +99,21 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddBlockedBy     func(childComplexity int, id string, targetID string, ifMatch *string) int
-		AddBlocking      func(childComplexity int, id string, targetID string, ifMatch *string) int
-		CreateBean       func(childComplexity int, input model.CreateBeanInput) int
-		CreateWorktree   func(childComplexity int, beanID string) int
-		DeleteBean       func(childComplexity int, id string) int
-		RemoveBlockedBy  func(childComplexity int, id string, targetID string, ifMatch *string) int
-		RemoveBlocking   func(childComplexity int, id string, targetID string, ifMatch *string) int
-		RemoveWorktree   func(childComplexity int, beanID string) int
-		SendAgentMessage func(childComplexity int, beanID string, message string) int
-		SetAgentPlanMode func(childComplexity int, beanID string, planMode bool) int
-		SetAgentYoloMode func(childComplexity int, beanID string, yoloMode bool) int
-		SetParent        func(childComplexity int, id string, parentID *string, ifMatch *string) int
-		StopAgent        func(childComplexity int, beanID string) int
-		UpdateBean       func(childComplexity int, id string, input model.UpdateBeanInput) int
+		AddBlockedBy      func(childComplexity int, id string, targetID string, ifMatch *string) int
+		AddBlocking       func(childComplexity int, id string, targetID string, ifMatch *string) int
+		ClearAgentSession func(childComplexity int, beanID string) int
+		CreateBean        func(childComplexity int, input model.CreateBeanInput) int
+		CreateWorktree    func(childComplexity int, beanID string) int
+		DeleteBean        func(childComplexity int, id string) int
+		RemoveBlockedBy   func(childComplexity int, id string, targetID string, ifMatch *string) int
+		RemoveBlocking    func(childComplexity int, id string, targetID string, ifMatch *string) int
+		RemoveWorktree    func(childComplexity int, beanID string) int
+		SendAgentMessage  func(childComplexity int, beanID string, message string) int
+		SetAgentPlanMode  func(childComplexity int, beanID string, planMode bool) int
+		SetAgentYoloMode  func(childComplexity int, beanID string, yoloMode bool) int
+		SetParent         func(childComplexity int, id string, parentID *string, ifMatch *string) int
+		StopAgent         func(childComplexity int, beanID string) int
+		UpdateBean        func(childComplexity int, id string, input model.UpdateBeanInput) int
 	}
 
 	PendingInteraction struct {
@@ -167,6 +168,7 @@ type MutationResolver interface {
 	StopAgent(ctx context.Context, beanID string) (bool, error)
 	SetAgentPlanMode(ctx context.Context, beanID string, planMode bool) (bool, error)
 	SetAgentYoloMode(ctx context.Context, beanID string, yoloMode bool) (bool, error)
+	ClearAgentSession(ctx context.Context, beanID string) (bool, error)
 }
 type QueryResolver interface {
 	Bean(ctx context.Context, id string) (*bean.Bean, error)
@@ -450,6 +452,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddBlocking(childComplexity, args["id"].(string), args["targetId"].(string), args["ifMatch"].(*string)), true
+	case "Mutation.clearAgentSession":
+		if e.complexity.Mutation.ClearAgentSession == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_clearAgentSession_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ClearAgentSession(childComplexity, args["beanId"].(string)), true
 	case "Mutation.createBean":
 		if e.complexity.Mutation.CreateBean == nil {
 			break
@@ -908,6 +921,17 @@ func (ec *executionContext) field_Mutation_addBlocking_args(ctx context.Context,
 		return nil, err
 	}
 	args["ifMatch"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_clearAgentSession_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "beanId", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["beanId"] = arg0
 	return args, nil
 }
 
@@ -3404,6 +3428,47 @@ func (ec *executionContext) fieldContext_Mutation_setAgentYoloMode(ctx context.C
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setAgentYoloMode_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_clearAgentSession(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_clearAgentSession,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().ClearAgentSession(ctx, fc.Args["beanId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_clearAgentSession(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_clearAgentSession_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -6754,6 +6819,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "setAgentYoloMode":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setAgentYoloMode(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "clearAgentSession":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearAgentSession(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

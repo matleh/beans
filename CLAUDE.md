@@ -22,6 +22,10 @@ You already know what beans is. This is the beans repository.
 - All CLI commands that interact with beans should internally use GraphQL queries/mutations.
 - `mise build` to build a `./beans` executable
 
+# GraphQL Subscriptions
+
+- When a mutation removes or clears state (e.g., deleting a session), the subscription resolver must still send an explicit "empty" payload to the frontend. Never skip `nil` results with `continue` — the frontend needs to know the state changed.
+
 # Extra rules for our own beans/issues
 
 - Use the `idea` tag for ideas and proposals.
