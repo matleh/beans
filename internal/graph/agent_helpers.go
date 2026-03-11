@@ -2,8 +2,10 @@ package graph
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hmans/beans/internal/agent"
+	"github.com/hmans/beans/internal/gitutil"
 	"github.com/hmans/beans/internal/graph/model"
 )
 
@@ -128,14 +130,15 @@ func activeAgentsToModel(agents []agent.ActiveAgent) []*model.ActiveAgentStatus 
 	return result
 }
 
-// actionContext provides context about the bean for action visibility filtering.
+// actionContext provides context about the bean for action visibility filtering
+// and prompt generation.
 type actionContext struct {
-	BeanID         string
-	BeanStatus     string
-	InWorktree     bool
-	WorktreePath   string
-	HasChanges     bool // uncommitted changes or untracked files in worktree
-	HasNewCommits  bool // commits ahead of the base branch
+	BeanID        string
+	BeanStatus    string
+	InWorktree    bool
+	WorkDir       string // working directory (worktree path or project root)
+	HasChanges    bool   // uncommitted changes or untracked files
+	HasNewCommits bool   // commits ahead of the base branch
 }
 
 // agentActionDef defines a single agent action with its metadata and prompt.
@@ -143,8 +146,8 @@ type agentActionDef struct {
 	ID          string
 	Label       string
 	Description string
-	// PromptFunc generates the prompt, receiving the bean ID for interpolation.
-	PromptFunc  func(beanID string) string
+	// PromptFunc generates the prompt from the full action context.
+	PromptFunc  func(ctx actionContext) string
 	// Visible determines whether this action should appear. If nil, always visible.
 	Visible     func(ctx actionContext) bool
 }
@@ -155,8 +158,8 @@ var agentActions = []agentActionDef{
 		ID:          "start-work",
 		Label:       "Start Work",
 		Description: "Mark the bean as in-progress and start implementing it",
-		PromptFunc:  func(beanID string) string {
-			return fmt.Sprintf("Mark the bean %s as in-progress and start implementing it.", beanID)
+		PromptFunc: func(ctx actionContext) string {
+			return fmt.Sprintf("Mark the bean %s as in-progress and start implementing it.", ctx.BeanID)
 		},
 		Visible: func(ctx actionContext) bool {
 			return ctx.InWorktree && ctx.BeanStatus != "in-progress"
@@ -166,15 +169,13 @@ var agentActions = []agentActionDef{
 		ID:          "commit",
 		Label:       "Commit",
 		Description: "Create a git commit",
-		PromptFunc:  func(_ string) string {
-			return "Create a commit. First, examine the git diff. If the only uncommitted changes are within the .beans/ directory (bean files), commit them with an appropriate message describing the bean updates (e.g. status changes, new beans, updated descriptions). If there are code changes as well, make sure there is an associated bean that is up to date, and possibly even marked as completed if you are done with the change. Then only commit changes related to that change."
-		},
+		PromptFunc:  commitPrompt,
 	},
 	{
 		ID:          "review",
 		Label:       "Review",
 		Description: "Ask for a code review",
-		PromptFunc:  func(_ string) string {
+		PromptFunc: func(_ actionContext) string {
 			return "Ask a subagent for a thorough code review."
 		},
 	},
@@ -182,7 +183,7 @@ var agentActions = []agentActionDef{
 		ID:          "integrate",
 		Label:       "Integrate",
 		Description: "Commit, complete the bean, and merge into main",
-		PromptFunc: func(beanID string) string {
+		PromptFunc: func(ctx actionContext) string {
 			return fmt.Sprintf(`Integrate this worktree's work into main. Follow these steps in order:
 
 1. If there are uncommitted changes, create a commit (following the usual commit guidelines).
@@ -191,12 +192,36 @@ var agentActions = []agentActionDef{
    - Switch to main and stash any uncommitted changes (git stash)
    - Merge this worktree's branch into main
    - Pop the stash to restore main's uncommitted changes (git stash pop)
-   - If there are merge conflicts with the stash, resolve them carefully.`, beanID)
+   - If there are merge conflicts with the stash, resolve them carefully.`, ctx.BeanID)
 		},
 		Visible: func(ctx actionContext) bool {
 			return ctx.InWorktree && (ctx.HasChanges || ctx.HasNewCommits)
 		},
 	},
+}
+
+// commitPrompt inspects the working directory to generate an appropriate commit prompt.
+func commitPrompt(ctx actionContext) string {
+	changes, err := gitutil.FileChanges(ctx.WorkDir)
+	if err != nil || len(changes) == 0 {
+		return "Create a commit. Examine the git diff and commit the changes with an appropriate message."
+	}
+
+	allBeans := true
+	var paths []string
+	for _, c := range changes {
+		paths = append(paths, c.Path)
+		if !strings.HasPrefix(c.Path, ".beans/") {
+			allBeans = false
+		}
+	}
+
+	if allBeans {
+		return fmt.Sprintf("Create a commit. The only uncommitted changes are bean files:\n%s\n\nCommit them with an appropriate message describing the bean updates (e.g. status changes, new beans, updated descriptions).",
+			strings.Join(paths, "\n"))
+	}
+
+	return "Create a commit. Make sure there is an associated bean that is up to date, and possibly even marked as completed if you are done with the change. Then only commit changes related to that change."
 }
 
 // findAgentAction looks up an action by ID, returning nil if not found.

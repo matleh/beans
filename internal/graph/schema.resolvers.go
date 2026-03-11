@@ -700,7 +700,8 @@ func (r *mutationResolver) ExecuteAgentAction(ctx context.Context, beanID string
 		}
 	}
 
-	if err := r.AgentMgr.SendMessage(beanID, workDir, action.PromptFunc(beanID)); err != nil {
+	actCtx := actionContext{BeanID: beanID, WorkDir: workDir}
+	if err := r.AgentMgr.SendMessage(beanID, workDir, action.PromptFunc(actCtx)); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -831,7 +832,7 @@ func (r *queryResolver) AgentActions(ctx context.Context, beanID string) ([]*mod
 			for _, wt := range wts {
 				if wt.BeanID == beanID {
 					actCtx.InWorktree = true
-					actCtx.WorktreePath = wt.Path
+					actCtx.WorkDir = wt.Path
 					actCtx.HasChanges = gitutil.HasChanges(wt.Path)
 					actCtx.HasNewCommits = gitutil.HasUnmergedCommits(wt.Path, "main")
 					break

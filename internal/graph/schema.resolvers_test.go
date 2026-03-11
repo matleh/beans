@@ -2972,9 +2972,8 @@ func TestExecuteAgentAction(t *testing.T) {
 		if lastMsg.Role != agent.RoleUser {
 			t.Fatalf("expected user role, got %s", lastMsg.Role)
 		}
-		commitAction := findAgentAction("commit")
-		if lastMsg.Content != commitAction.PromptFunc(CentralSessionID) {
-			t.Fatalf("expected commit prompt, got: %s", lastMsg.Content)
+		if lastMsg.Content == "" {
+			t.Fatal("expected non-empty commit prompt")
 		}
 	})
 
@@ -2997,8 +2996,7 @@ func TestExecuteAgentAction(t *testing.T) {
 			t.Fatal("expected session to exist")
 		}
 		lastMsg := session.Messages[len(session.Messages)-1]
-		reviewAction := findAgentAction("review")
-		if lastMsg.Content != reviewAction.PromptFunc(CentralSessionID) {
+		if lastMsg.Content != "Ask a subagent for a thorough code review." {
 			t.Fatalf("expected review prompt, got: %s", lastMsg.Content)
 		}
 	})
@@ -3031,7 +3029,7 @@ func TestAgentActionRegistry(t *testing.T) {
 		}
 		if action.PromptFunc == nil {
 			t.Errorf("nil PromptFunc for action: %s", id)
-		} else if action.PromptFunc("test-bean") == "" {
+		} else if action.PromptFunc(actionContext{BeanID: "test-bean"}) == "" {
 			t.Errorf("empty prompt for action: %s", id)
 		}
 	}
