@@ -3,11 +3,10 @@
   import { beansStore } from '$lib/beans.svelte';
   import WorkspaceView from '$lib/components/WorkspaceView.svelte';
 
-  const bean = $derived(beansStore.get(page.params.beanId) ?? null);
+  const worktreeId = $derived(page.params.beanId);
+  const bean = $derived(beansStore.get(worktreeId) ?? undefined);
 </script>
 
-{#if bean}
-  {#key bean.id}
-    <WorkspaceView {bean} />
-  {/key}
-{/if}
+{#key worktreeId}
+  <WorkspaceView {worktreeId} {bean} />
+{/key}

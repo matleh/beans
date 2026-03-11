@@ -534,11 +534,7 @@ func (r *mutationResolver) StartWork(ctx context.Context, beanID string) (*model
 		fmt.Printf("[beans] warning: failed to watch worktree beans: %v\n", err)
 	}
 
-	return &model.Worktree{
-		BeanID: wt.BeanID,
-		Branch: wt.Branch,
-		Path:   wt.Path,
-	}, nil
+	return worktreeToModel(wt), nil
 }
 
 // StopWork is the resolver for the stopWork field.
@@ -559,6 +555,46 @@ func (r *mutationResolver) StopWork(ctx context.Context, beanID string) (bool, e
 	}
 
 	if err := r.WorktreeMgr.Remove(normalizedID); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// CreateWorktree is the resolver for the createWorktree field.
+func (r *mutationResolver) CreateWorktree(ctx context.Context, name string) (*model.Worktree, error) {
+	if r.WorktreeMgr == nil {
+		return nil, fmt.Errorf("worktree support not available")
+	}
+
+	wt, err := r.WorktreeMgr.CreateStandalone(name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Start watching the worktree's .beans/ directory for bean changes
+	if err := r.Core.WatchWorktreeBeans(wt.Path); err != nil {
+		fmt.Printf("[beans] warning: failed to watch worktree beans: %v\n", err)
+	}
+
+	return worktreeToModel(wt), nil
+}
+
+// RemoveWorktree is the resolver for the removeWorktree field.
+func (r *mutationResolver) RemoveWorktree(ctx context.Context, id string) (bool, error) {
+	if r.WorktreeMgr == nil {
+		return false, fmt.Errorf("worktree support not available")
+	}
+
+	// Find the worktree path before removing (for unwatching)
+	worktrees, _ := r.WorktreeMgr.List()
+	for _, wt := range worktrees {
+		if wt.BeanID == id {
+			r.Core.UnwatchWorktreeBeans(wt.Path)
+			break
+		}
+	}
+
+	if err := r.WorktreeMgr.Remove(id); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -753,11 +789,7 @@ func (r *queryResolver) Worktrees(ctx context.Context) ([]*model.Worktree, error
 
 	result := make([]*model.Worktree, len(wts))
 	for i, wt := range wts {
-		result[i] = &model.Worktree{
-			BeanID: wt.BeanID,
-			Branch: wt.Branch,
-			Path:   wt.Path,
-		}
+		result[i] = worktreeToModel(&wt)
 	}
 	return result, nil
 }
@@ -968,11 +1000,7 @@ func (r *subscriptionResolver) WorktreesChanged(ctx context.Context) (<-chan []*
 		if wts, err := r.WorktreeMgr.List(); err == nil {
 			result := make([]*model.Worktree, len(wts))
 			for i, wt := range wts {
-				result[i] = &model.Worktree{
-					BeanID: wt.BeanID,
-					Branch: wt.Branch,
-					Path:   wt.Path,
-				}
+				result[i] = worktreeToModel(&wt)
 			}
 			select {
 			case out <- result:
@@ -996,11 +1024,7 @@ func (r *subscriptionResolver) WorktreesChanged(ctx context.Context) (<-chan []*
 				}
 				result := make([]*model.Worktree, len(wts))
 				for i, wt := range wts {
-					result[i] = &model.Worktree{
-						BeanID: wt.BeanID,
-						Branch: wt.Branch,
-						Path:   wt.Path,
-					}
+					result[i] = worktreeToModel(&wt)
 				}
 				select {
 				case out <- result:

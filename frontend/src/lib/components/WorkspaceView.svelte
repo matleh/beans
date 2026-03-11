@@ -11,15 +11,16 @@
   import PaneHeader from './PaneHeader.svelte';
 
   interface Props {
-    bean: Bean;
+    bean?: Bean;
+    worktreeId: string;
   }
 
-  let { bean }: Props = $props();
+  let { bean, worktreeId }: Props = $props();
 
   const agentStore = new AgentChatStore();
 
   $effect(() => {
-    agentStore.subscribe(bean.id);
+    agentStore.subscribe(worktreeId);
   });
 
   onDestroy(() => {
@@ -29,7 +30,7 @@
   const agentBusy = $derived(agentStore.session?.status === 'RUNNING');
 
   const worktreePath = $derived(
-    worktreeStore.worktrees.find((wt) => wt.beanId === bean.id)?.path
+    worktreeStore.worktrees.find((wt) => wt.beanId === worktreeId)?.path
   );
 </script>
 
@@ -56,42 +57,47 @@
   </PaneHeader>
 {/snippet}
 
-<SplitPane direction="horizontal" side="end" persistKey="workspace-chat-width" initialSize={480}>
-  {#snippet aside()}
-    {#if ui.showChanges}
-      <SplitPane
-        direction="horizontal"
-        side="end"
-        persistKey="workspace-changes-chat-split"
-        initialSize={480}
-      >
-        {#snippet children()}
-          <ChangesPane
-            path={worktreePath}
-            beanId={bean.id}
-            {agentBusy}
-          />
-        {/snippet}
-        {#snippet aside()}
-          <div class="flex h-full flex-col border-l border-border bg-surface">
-            {@render agentToolbar()}
-            <div class="min-h-0 flex-1">
-              <AgentChat beanId={bean.id} store={agentStore} />
-            </div>
-          </div>
-        {/snippet}
-      </SplitPane>
-    {:else}
-      <div class="flex h-full flex-col border-l border-border bg-surface">
-        {@render agentToolbar()}
-        <div class="min-h-0 flex-1">
-          <AgentChat beanId={bean.id} store={agentStore} />
-        </div>
-      </div>
-    {/if}
-  {/snippet}
+{#snippet agentChatPanel()}
+  <div class="flex h-full flex-col border-l border-border bg-surface">
+    {@render agentToolbar()}
+    <div class="min-h-0 flex-1">
+      <AgentChat beanId={worktreeId} store={agentStore} />
+    </div>
+  </div>
+{/snippet}
 
-  {#snippet children()}
-    <BeanPane {bean} onSelect={(b) => ui.selectBean(b)} onEdit={(b) => ui.openEditForm(b)} />
-  {/snippet}
-</SplitPane>
+{#snippet changesChatSplit()}
+  {#if ui.showChanges}
+    <SplitPane
+      direction="horizontal"
+      side="end"
+      persistKey="workspace-changes-chat-split"
+      initialSize={480}
+    >
+      {#snippet children()}
+        <ChangesPane path={worktreePath} beanId={worktreeId} {agentBusy} />
+      {/snippet}
+      {#snippet aside()}
+        {@render agentChatPanel()}
+      {/snippet}
+    </SplitPane>
+  {:else}
+    {@render agentChatPanel()}
+  {/if}
+{/snippet}
+
+{#if bean}
+  <SplitPane direction="horizontal" side="end" persistKey="workspace-chat-width" initialSize={480}>
+    {#snippet aside()}
+      {@render changesChatSplit()}
+    {/snippet}
+
+    {#snippet children()}
+      <BeanPane {bean} onSelect={(b) => ui.selectBean(b)} onEdit={(b) => ui.openEditForm(b)} />
+    {/snippet}
+  </SplitPane>
+{:else}
+  <div class="flex h-full">
+    {@render changesChatSplit()}
+  </div>
+{/if}

@@ -3,6 +3,7 @@ package worktree
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -11,16 +12,18 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/hmans/beans/pkg/bean"
 	"github.com/hmans/beans/pkg/safepath"
 )
 
 const branchPrefix = "beans/"
 
-// Worktree represents a git worktree associated with a bean.
+// Worktree represents a git worktree associated with a bean or standalone.
 type Worktree struct {
 	BeanID string
 	Branch string
 	Path   string
+	Name   string // Human-readable name (non-empty for standalone worktrees)
 }
 
 // Manager handles git worktree operations for a repository.
@@ -90,7 +93,16 @@ func (m *Manager) List() ([]Worktree, error) {
 		return nil, fmt.Errorf("git worktree list: %w", err)
 	}
 
-	return parsePorcelain(string(out)), nil
+	worktrees := parsePorcelain(string(out))
+
+	// Enrich with metadata (name for standalone worktrees)
+	for i := range worktrees {
+		if meta := m.loadMeta(worktrees[i].BeanID); meta != nil {
+			worktrees[i].Name = meta.Name
+		}
+	}
+
+	return worktrees, nil
 }
 
 // parsePorcelain parses `git worktree list --porcelain` output and returns
@@ -196,6 +208,93 @@ func (m *Manager) Create(beanID string) (*Worktree, error) {
 	return wt, nil
 }
 
+// worktreeMeta is the metadata stored alongside standalone worktrees.
+type worktreeMeta struct {
+	Name string `json:"name"`
+}
+
+// metaPath returns the path to the metadata file for a worktree ID.
+func (m *Manager) metaPath(id string) string {
+	return filepath.Join(m.beansDir, ".worktrees", id+".meta.json")
+}
+
+// loadMeta loads the metadata for a worktree, if it exists.
+func (m *Manager) loadMeta(id string) *worktreeMeta {
+	data, err := os.ReadFile(m.metaPath(id))
+	if err != nil {
+		return nil
+	}
+	var meta worktreeMeta
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return nil
+	}
+	return &meta
+}
+
+// saveMeta saves metadata for a worktree.
+func (m *Manager) saveMeta(id string, meta *worktreeMeta) error {
+	data, err := json.Marshal(meta)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(m.metaPath(id), data, 0644)
+}
+
+// removeMeta removes the metadata file for a worktree.
+func (m *Manager) removeMeta(id string) {
+	os.Remove(m.metaPath(id))
+}
+
+// CreateStandalone creates a new git worktree not associated with any bean.
+// It generates a unique ID and stores the human-readable name as metadata.
+func (m *Manager) CreateStandalone(name string) (*Worktree, error) {
+	if name == "" {
+		return nil, fmt.Errorf("worktree name must not be empty")
+	}
+
+	// Generate a unique ID with "wt-" prefix
+	id := "wt-" + bean.NewID("", 4)
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	branch := branchPrefix + id
+	worktreePath := m.worktreePath(id)
+
+	// Check if the worktree path already exists
+	if _, err := os.Stat(worktreePath); err == nil {
+		return nil, fmt.Errorf("worktree path already exists: %s", worktreePath)
+	}
+
+	// Create the worktree with a new branch
+	args := []string{"worktree", "add", worktreePath, "-b", branch}
+	if m.baseRef != "" {
+		args = append(args, m.baseRef)
+	}
+	cmd := exec.Command("git", args...)
+	cmd.Dir = m.repoRoot
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("[worktree] failed to create standalone worktree %s at %s: %s: %v", id, worktreePath, strings.TrimSpace(string(out)), err)
+		return nil, fmt.Errorf("git worktree add: %s: %w", strings.TrimSpace(string(out)), err)
+	}
+
+	// Save the name metadata
+	if err := m.saveMeta(id, &worktreeMeta{Name: name}); err != nil {
+		log.Printf("[worktree] warning: failed to save metadata for %s: %v", id, err)
+	}
+
+	wt := &Worktree{
+		BeanID: id,
+		Branch: branch,
+		Path:   worktreePath,
+		Name:   name,
+	}
+
+	log.Printf("[worktree] created standalone worktree %s (name=%s, branch=%s, path=%s)", id, name, branch, worktreePath)
+	m.notify()
+	return wt, nil
+}
+
 // Remove removes the worktree for the given bean ID.
 // The actual worktree path is looked up from git (not computed), so this works
 // even when the worktree was created from a different repo root/workspace.
@@ -251,6 +350,7 @@ func (m *Manager) Remove(beanID string) error {
 	}
 
 	log.Printf("[worktree] removed worktree for %s (path=%s)", beanID, worktreePath)
+	m.removeMeta(beanID)
 	m.notify()
 	return nil
 }

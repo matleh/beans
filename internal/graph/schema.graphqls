@@ -156,6 +156,17 @@ type Mutation {
   stopWork(beanId: ID!): Boolean!
 
   """
+  Create a standalone worktree not associated with any bean.
+  Returns the created worktree with a generated ID.
+  """
+  createWorktree(name: String!): Worktree!
+
+  """
+  Remove a worktree by its ID (works for both bean-attached and standalone worktrees).
+  """
+  removeWorktree(id: ID!): Boolean!
+
+  """
   Send a message to the agent in a worktree. Starts a session if none exists.
   """
   sendAgentMessage(beanId: ID!, message: String!): Boolean!
@@ -430,13 +441,15 @@ input BeanFilter {
 }
 
 """
-A git worktree associated with a bean
+A git worktree, either associated with a bean or standalone
 """
 type Worktree {
-  "The bean ID this worktree is for"
+  "The bean ID this worktree is for (also serves as worktree identifier for standalone worktrees)"
   beanId: ID!
-  "The associated bean"
+  "The associated bean (null for standalone worktrees)"
   bean: Bean
+  "Human-readable name (set for standalone worktrees, null for bean-attached)"
+  name: String
   "Git branch name"
   branch: String!
   "Filesystem path to the worktree"

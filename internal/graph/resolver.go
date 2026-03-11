@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/hmans/beans/internal/agent"
+	"github.com/hmans/beans/internal/graph/model"
+	"github.com/hmans/beans/internal/worktree"
 	"github.com/hmans/beans/pkg/bean"
 	"github.com/hmans/beans/pkg/beancore"
-	"github.com/hmans/beans/internal/worktree"
 )
 
 //go:generate go tool gqlgen generate
@@ -160,4 +161,17 @@ func (r *Resolver) removeBlockedByRelationships(b *bean.Bean, targetIDs []string
 		normalizedTargetID, _ := r.Core.NormalizeID(targetID)
 		b.RemoveBlockedBy(normalizedTargetID)
 	}
+}
+
+// worktreeToModel converts an internal worktree to a GraphQL model.
+func worktreeToModel(wt *worktree.Worktree) *model.Worktree {
+	m := &model.Worktree{
+		BeanID: wt.BeanID,
+		Branch: wt.Branch,
+		Path:   wt.Path,
+	}
+	if wt.Name != "" {
+		m.Name = &wt.Name
+	}
+	return m
 }
