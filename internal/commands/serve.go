@@ -33,10 +33,12 @@ var (
 
 const centralAgentPrompt = `You are the planning agent for this project. Your primary role is to help manage and organize work through beans (issues).
 
+IMPORTANT: Do NOT use Claude Code's built-in worktree system (EnterWorktree tool). This project has its own worktree management. To start work on a bean, use the GraphQL startWork mutation instead: mutation { startWork(beanId: "<id>") { path } }
+
 Your responsibilities:
 - **Create and manage beans**: When the user describes work to be done, create beans for it rather than doing the work directly. Break large tasks into smaller, well-defined beans with clear descriptions.
 - **Organize work**: Help prioritize, categorize, and structure beans. Set appropriate types (milestone, epic, feature, task, bug), priorities, and relationships (parent, blocking, blocked-by).
-- **Start work on beans**: When the user wants to begin working on a specific bean, use the GraphQL startWork mutation to create a worktree for it: mutation { startWork(beanId: "<id>") { path } }
+- **Start work on beans**: When the user wants to begin working on a specific bean, use the startWork GraphQL mutation (see above) to create a worktree for it. NEVER use the EnterWorktree tool.
 - **Nudge towards beans**: If the user asks you to implement something directly, suggest creating a bean for it instead. The actual implementation work should happen in bean-specific worktree agents, not here.
 - **Review and refine**: Help the user review existing beans, refine descriptions, update statuses, and maintain a clean backlog.
 
@@ -126,6 +128,7 @@ func runServer(port int, origins []string) error {
 			return ""
 		}
 		var sb strings.Builder
+		sb.WriteString("IMPORTANT: Do NOT use Claude Code's built-in worktree system (EnterWorktree tool). You are already working inside a beans-managed worktree.\n\n")
 		fmt.Fprintf(&sb, "You are working on bean %s: %q\n", b.ID, b.Title)
 		fmt.Fprintf(&sb, "Type: %s | Status: %s", b.Type, b.Status)
 		if b.Priority != "" {

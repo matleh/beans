@@ -694,6 +694,7 @@ func buildClaudeArgs(session *Session) []string {
 		"--output-format", "stream-json",
 		"--input-format", "stream-json",
 		"--include-partial-messages",
+		"--disallowedTools", "EnterWorktree", "ExitWorktree",
 	}
 	if session.ActMode {
 		args = append(args, "--dangerously-skip-permissions")
