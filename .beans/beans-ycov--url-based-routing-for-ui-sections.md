@@ -1,11 +1,12 @@
 ---
 # beans-ycov
 title: URL-based routing for UI sections
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-03-11T17:38:53Z
-updated_at: 2026-03-11T17:45:57Z
+updated_at: 2026-03-11T18:02:28Z
+order: "7"
 ---
 
 Use URL routes to reflect which part of the UI the user is in (planning view, bean workspace, etc.). This enables deep linking, browser back/forward navigation, and shareable URLs for specific views.
