@@ -151,15 +151,16 @@ func (m *Manager) spawnAndRun(beanID string, session *Session) {
 	m.processes[beanID] = proc
 	m.mu.Unlock()
 
-	// Log stderr in background
+	// Drain stderr silently — Claude Code writes verbose progress info here
+	// that overwhelms server logs. Errors that matter surface as stream events.
 	go func() {
 		scanner := bufio.NewScanner(stderr)
 		for scanner.Scan() {
-			log.Printf("[agent:%s] stderr: %s", beanID, scanner.Text())
+			_ = scanner.Text()
 		}
 	}()
 
-	log.Printf("[agent:%s] spawned claude process (pid=%d, dir=%s, args=%v)", beanID, cmd.Process.Pid, session.WorkDir, args)
+	log.Printf("[agent:%s] spawned claude process (pid=%d, dir=%s)", beanID, cmd.Process.Pid, session.WorkDir)
 
 	// Send the initial user message, prepending bean context on first spawn
 	lastMsg := session.Messages[len(session.Messages)-1]
@@ -251,7 +252,13 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader, workDir string) {
 
 		ev := parseStreamLine(line)
 		if ev.Type == eventUnknown {
-			log.Printf("[agent:%s] unhandled event: %s", beanID, string(line))
+			// Log only the event type, not the full payload (which can be huge)
+			eventType := "?"
+			var peek struct{ Type string `json:"type"` }
+			if json.Unmarshal(line, &peek) == nil && peek.Type != "" {
+				eventType = peek.Type
+			}
+			log.Printf("[agent:%s] unhandled event type: %s", beanID, eventType)
 		}
 
 		// Finalize deferred AskUserQuestion blocking when tool input is complete.
