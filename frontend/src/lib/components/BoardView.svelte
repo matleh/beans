@@ -61,6 +61,31 @@
     );
   }
 
+  // Scroll fade indicators per column
+  let scrollState = $state<Record<string, { top: boolean; bottom: boolean }>>({});
+
+  function trackScroll(el: HTMLElement, status: string) {
+    function update() {
+      scrollState[status] = {
+        top: el.scrollTop > 0,
+        bottom: el.scrollTop + el.clientHeight < el.scrollHeight - 1
+      };
+    }
+    requestAnimationFrame(update);
+    el.addEventListener('scroll', update, { passive: true });
+    const resizeObs = new ResizeObserver(update);
+    resizeObs.observe(el);
+    const mutationObs = new MutationObserver(update);
+    mutationObs.observe(el, { childList: true, subtree: true });
+    return {
+      destroy() {
+        el.removeEventListener('scroll', update);
+        resizeObs.disconnect();
+        mutationObs.disconnect();
+      }
+    };
+  }
+
   // Drag and drop
   let draggedBeanId = $state<string | null>(null);
   let dropTargetStatus = $state<string | null>(null);
@@ -144,58 +169,75 @@
         {/if}
       </div>
 
-      <!-- Cards (drop zone) -->
-      <div
-        class={[
-          'flex-1 overflow-y-auto rounded-xl p-2 transition-colors',
-          dropTargetStatus === col.status && draggedBeanId && 'bg-accent/10 ring-2 ring-accent/30'
-        ]}
-        role="list"
-        ondragover={(e) => onColumnDragOver(e, col.status, beans.length)}
-        ondragleave={(e) => onDragLeave(e, e.currentTarget)}
-        ondrop={(e) => onDrop(e, col.status, beans)}
-      >
-        {#each beans as bean, index (bean.id)}
-          <!-- Drop indicator (always present, transparent unless active) -->
+      <!-- Cards (drop zone) with scroll fade indicators -->
+      <div class="relative min-h-0 flex-1">
+        <div
+          class={[
+            'pointer-events-none absolute inset-x-0 top-0 z-10 h-6 rounded-t-xl bg-linear-to-b from-surface-alt to-transparent transition-opacity duration-150',
+            scrollState[col.status]?.top ? 'opacity-100' : 'opacity-0'
+          ]}
+        ></div>
+
+        <div
+          class={[
+            'h-full overflow-y-auto rounded-xl p-2 transition-colors',
+            dropTargetStatus === col.status && draggedBeanId && 'bg-accent/10 ring-2 ring-accent/30'
+          ]}
+          role="list"
+          use:trackScroll={col.status}
+          ondragover={(e) => onColumnDragOver(e, col.status, beans.length)}
+          ondragleave={(e) => onDragLeave(e, e.currentTarget)}
+          ondrop={(e) => onDrop(e, col.status, beans)}
+        >
+          {#each beans as bean, index (bean.id)}
+            <!-- Drop indicator (always present, transparent unless active) -->
+            <div
+              class={[
+                'mx-1 my-1 h-0.5 rounded-full transition-colors',
+                dropTargetStatus === col.status &&
+                draggedBeanId &&
+                draggedBeanId !== bean.id &&
+                dropIndex === index
+                  ? 'bg-accent'
+                  : 'bg-transparent'
+              ]}
+            ></div>
+
+            <div
+              class={[
+                'overflow-hidden rounded border border-l-5 border-border bg-surface shadow transition-all',
+                typeBorders[bean.type] ?? 'border-l-type-task-border',
+                draggedBeanId === bean.id ? 'opacity-40' : 'hover:shadow-md',
+                selectedId === bean.id && 'bg-accent/5 ring-1 ring-accent'
+              ]}
+              draggable="true"
+              ondragstart={(e) => onDragStart(e, bean)}
+              ondragend={onDragEnd}
+              ondragover={(e) => onCardDragOver(e, col.status, index)}
+              role="listitem"
+              transition:fade={{ duration: 150 }}
+            >
+              <BeanCard {bean} variant="board" onclick={() => onSelect?.(bean)} />
+            </div>
+          {:else}
+            <div class="text-center text-text-faint text-sm py-8">No beans</div>
+          {/each}
+
+          <!-- Drop indicator at end (always present) -->
           <div
             class={[
               'mx-1 my-1 h-0.5 rounded-full transition-colors',
-              dropTargetStatus === col.status &&
-              draggedBeanId &&
-              draggedBeanId !== bean.id &&
-              dropIndex === index
+              dropTargetStatus === col.status && draggedBeanId && dropIndex === beans.length
                 ? 'bg-accent'
                 : 'bg-transparent'
             ]}
           ></div>
+        </div>
 
-          <div
-            class={[
-              'overflow-hidden rounded border border-l-5 border-border bg-surface shadow transition-all',
-              typeBorders[bean.type] ?? 'border-l-type-task-border',
-              draggedBeanId === bean.id ? 'opacity-40' : 'hover:shadow-md',
-              selectedId === bean.id && 'bg-accent/5 ring-1 ring-accent'
-            ]}
-            draggable="true"
-            ondragstart={(e) => onDragStart(e, bean)}
-            ondragend={onDragEnd}
-            ondragover={(e) => onCardDragOver(e, col.status, index)}
-            role="listitem"
-            transition:fade={{ duration: 150 }}
-          >
-            <BeanCard {bean} variant="board" onclick={() => onSelect?.(bean)} />
-          </div>
-        {:else}
-          <div class="text-center text-text-faint text-sm py-8">No beans</div>
-        {/each}
-
-        <!-- Drop indicator at end (always present) -->
         <div
           class={[
-            'mx-1 my-1 h-0.5 rounded-full transition-colors',
-            dropTargetStatus === col.status && draggedBeanId && dropIndex === beans.length
-              ? 'bg-accent'
-              : 'bg-transparent'
+            'pointer-events-none absolute inset-x-0 bottom-0 z-10 h-6 rounded-b-xl bg-linear-to-t from-surface-alt to-transparent transition-opacity duration-150',
+            scrollState[col.status]?.bottom ? 'opacity-100' : 'opacity-0'
           ]}
         ></div>
       </div>
