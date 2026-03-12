@@ -51,8 +51,8 @@
   <SplitPane
     direction="horizontal"
     panels={[
-      { content: changesPanel, size: 420, collapsed: !ui.showChanges, persistKey: 'workspace-changes' },
-      { content: agentChatPanel }
+      { content: agentChatPanel },
+      { content: changesPanel, size: 420, collapsed: !ui.showChanges, persistKey: 'workspace-changes' }
     ]}
   />
 {/snippet}
