@@ -5,6 +5,7 @@
   import { ui } from '$lib/uiState.svelte';
   import { generateWorkspaceName } from '$lib/nameGenerator';
   import ConfirmModal from './ConfirmModal.svelte';
+  import greenbean from '$lib/assets/greenbean.png';
 
   interface WorkspaceItem {
     id: string;
@@ -125,6 +126,10 @@
         </button>
       {/each}
     {/if}
+  </div>
+
+  <div class="shrink-0 overflow-hidden">
+    <img src={greenbean} alt="" class="relative -bottom-8 -left-4 h-auto w-52 opacity-40" />
   </div>
 
   {#if confirmingRemoveId}
