@@ -154,7 +154,7 @@
         <SplitPane direction="horizontal" side="end" persistKey="planning-agent" initialSize={420} collapsed={!configStore.agentEnabled || !ui.showPlanningChat}>
           {#snippet aside()}
             {#if ui.showPlanningChat}
-              <div class="flex h-full flex-col border-l border-border bg-surface">
+              <div class="flex h-full flex-col bg-surface">
                 <PaneHeader title="Agent" onClose={() => ui.togglePlanningChat()} />
                 <div class="min-h-0 flex-1">
                   <AgentChat beanId={CENTRAL_SESSION_ID} store={agentStore} />

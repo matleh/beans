@@ -362,7 +362,7 @@
   </div>
 {/snippet}
 
-<div class="flex h-full flex-col border-l border-border bg-surface">
+<div class="flex h-full flex-col bg-surface">
   <PaneHeader title="Changes" onClose={() => ui.toggleChanges()}>
     {#snippet extra()}
       {#if totalCount > 0}

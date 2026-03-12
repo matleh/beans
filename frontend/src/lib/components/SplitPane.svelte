@@ -85,6 +85,7 @@
   }
 
   const isHorizontal = $derived(direction === 'horizontal');
+  const isReversed = $derived(side === 'end');
   const displaySize = $derived(collapsed ? 0 : size);
 </script>
 
@@ -92,69 +93,39 @@
 
 <div
   bind:this={containerEl}
-  class={['flex min-h-0 min-w-0 flex-1', isHorizontal ? 'flex-row' : 'flex-col']}
+  class={[
+    'flex min-h-0 min-w-0 flex-1',
+    isHorizontal ? (isReversed ? 'flex-row-reverse' : 'flex-row') : isReversed ? 'flex-col-reverse' : 'flex-col'
+  ]}
 >
-  {#if side === 'start'}
-    <!-- Fixed-size pane (start) -->
+  <!-- Fixed-size aside pane -->
+  <div
+    class="flex shrink-0 flex-col overflow-hidden"
+    style="{isHorizontal ? 'width' : 'height'}: {displaySize}px"
+  >
+    {@render aside()}
+  </div>
+
+  <!-- Resize handle -->
+  {#if !collapsed}
     <div
-      class="flex shrink-0 flex-col overflow-hidden"
-      style="{isHorizontal ? 'width' : 'height'}: {displaySize}px"
-    >
-      {@render aside()}
-    </div>
-
-    <!-- Resize handle -->
-    {#if !collapsed}
-      <div
-        class={[
-          'shrink-0 transition-colors',
-          isHorizontal ? 'w-px cursor-col-resize' : 'h-1 cursor-row-resize',
-          isDragging ? 'bg-surface-dim' : 'bg-border hover:bg-surface-dim'
-        ]}
-        role="slider"
-        aria-orientation={isHorizontal ? 'horizontal' : 'vertical'}
-        aria-valuenow={size}
-        aria-valuemin={minSize}
-        aria-valuemax={maxSize ?? 999}
-        tabindex="0"
-        onmousedown={startDrag}
-      ></div>
-    {/if}
-
-    <!-- Flexible pane -->
-    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
-      {@render children()}
-    </div>
-  {:else}
-    <!-- Flexible pane -->
-    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
-      {@render children()}
-    </div>
-
-    <!-- Resize handle -->
-    {#if !collapsed}
-      <div
-        class={[
-          'shrink-0 transition-colors',
-          isHorizontal ? 'w-px cursor-col-resize' : 'h-1 cursor-row-resize',
-          isDragging ? 'bg-surface-dim' : 'bg-border hover:bg-surface-dim'
-        ]}
-        role="slider"
-        aria-orientation={isHorizontal ? 'horizontal' : 'vertical'}
-        aria-valuenow={size}
-        aria-valuemin={minSize}
-        aria-valuemax={maxSize ?? 999}
-        tabindex="0"
-        onmousedown={startDrag}
-      ></div>
-    {/if}
-
-    <!-- Fixed-size pane (end) -->
-    <div
-      class="flex shrink-0 flex-col overflow-hidden"
-      style="{isHorizontal ? 'width' : 'height'}: {displaySize}px"
-    >
-      {@render aside()}
-    </div>
+      class={[
+        'shrink-0 transition-colors',
+        isHorizontal ? 'w-px cursor-col-resize' : 'h-1 cursor-row-resize',
+        isDragging ? 'bg-surface-dim' : 'bg-border hover:bg-surface-dim'
+      ]}
+      role="slider"
+      aria-orientation={isHorizontal ? 'horizontal' : 'vertical'}
+      aria-valuenow={size}
+      aria-valuemin={minSize}
+      aria-valuemax={maxSize ?? 999}
+      tabindex="0"
+      onmousedown={startDrag}
+    ></div>
   {/if}
+
+  <!-- Main content pane -->
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+    {@render children()}
+  </div>
 </div>

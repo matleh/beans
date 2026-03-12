@@ -65,7 +65,7 @@
 {/snippet}
 
 {#snippet agentChatPanel()}
-  <div class="flex h-full flex-col border-l border-border bg-surface">
+  <div class="flex h-full flex-col bg-surface">
     {@render agentToolbar()}
     <div class="min-h-0 flex-1">
       <AgentChat beanId={worktreeId} store={agentStore} />
