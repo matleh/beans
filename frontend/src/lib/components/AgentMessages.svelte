@@ -129,7 +129,7 @@
             </div>
           </div>
         {:else if msg.role === 'TOOL'}
-          <div class="text-xs text-text-faint">
+          <div class="text-text-faint">
             <div class="flex gap-2">
               <span class="shrink-0 select-none">&middot;</span>
               {#if msg.diff}
@@ -144,7 +144,7 @@
               {/if}
             </div>
             {#if msg.diff && expandedDiffs.has(i)}
-              <pre class="mt-1 ml-5 max-h-64 overflow-auto rounded border border-border bg-surface-alt p-2 font-mono text-xs leading-relaxed">{#each msg.diff.split('\n') as line}<span class={diffLineClass(line)}>{line}
+              <pre class="mt-1 ml-5 max-h-64 overflow-auto rounded border border-border bg-surface-alt p-2 font-mono leading-relaxed">{#each msg.diff.split('\n') as line}<span class={diffLineClass(line)}>{line}
 </span>{/each}</pre>
             {/if}
           </div>
@@ -176,7 +176,7 @@
       {/if}
 
       {#each subagentActivities as activity (activity.taskId)}
-        <div class="flex gap-2 text-xs text-text-faint">
+        <div class="flex gap-2 text-text-faint">
           <span class="shrink-0 select-none">&middot;</span>
           <span class="animate-pulse">
             <span class="text-text-muted">#{activity.index}</span>
