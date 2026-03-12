@@ -122,7 +122,7 @@
   }
 </script>
 
-<div class="flex h-full overflow-x-auto p-4">
+<div class="flex min-h-0 flex-1 overflow-x-auto bg-surface-alt px-4 pt-4">
   {#each columns as col (col.status)}
     {@const beans = beansForStatus(col.status)}
     <div class="flex w-75 min-w-65 shrink-0 flex-col" data-status={col.status}>

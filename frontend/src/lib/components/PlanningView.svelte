@@ -139,9 +139,7 @@
               </div>
             </div>
           {:else}
-            <div class="min-h-0 flex-1 bg-surface-alt">
-              <BoardView onSelect={(b) => ui.selectBean(b)} selectedId={ui.currentBean?.id} />
-            </div>
+            <BoardView onSelect={(b) => ui.selectBean(b)} selectedId={ui.currentBean?.id} />
           {/if}
         </div>
       {/snippet}
