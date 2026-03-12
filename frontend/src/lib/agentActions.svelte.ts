@@ -50,8 +50,7 @@ export class AgentActionsStore {
     this.#wasAgentBusy = busy;
   }
 
-  async execute(beanId: string, actionId: string, agentBusy: boolean) {
-    if (agentBusy) return;
+  async execute(beanId: string, actionId: string) {
     this.executingAction = actionId;
     try {
       await client.mutation(EXECUTE_AGENT_ACTION, { beanId, actionId }).toPromise();

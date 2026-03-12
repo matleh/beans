@@ -18,12 +18,11 @@
 
   import TerminalPane from '$lib/components/TerminalPane.svelte';
   import ViewToolbar from '$lib/components/ViewToolbar.svelte';
-  import { AgentActionsStore } from '$lib/agentActions.svelte';
+  import AgentActions from '$lib/components/AgentActions.svelte';
 
   const CENTRAL_SESSION_ID = '__central__';
 
   const agentStore = new AgentChatStore();
-  const actionsStore = new AgentActionsStore();
 
   $effect(() => {
     agentStore.subscribe(CENTRAL_SESSION_ID);
@@ -34,15 +33,6 @@
   });
 
   const agentBusy = $derived(agentStore.session?.status === 'RUNNING');
-
-  // Fetch agent actions on mount and when agent finishes
-  $effect(() => {
-    actionsStore.fetch(CENTRAL_SESSION_ID);
-  });
-
-  $effect(() => {
-    actionsStore.notifyAgentStatus(CENTRAL_SESSION_ID, agentBusy);
-  });
 
   let filterInput = $state<FilterInput | null>(null);
 
@@ -105,18 +95,7 @@
       <FilterInput bind:this={filterInput} />
     </div>
     {#snippet right()}
-      {#each actionsStore.actions as action (action.id)}
-        <button
-          class={[
-            'btn-toggle btn-toggle-inactive ml-1'
-          ]}
-          disabled={agentBusy || !!actionsStore.executingAction}
-          title={action.description ?? undefined}
-          onclick={() => actionsStore.execute(CENTRAL_SESSION_ID, action.id, agentBusy)}
-        >
-          {action.label}
-        </button>
-      {/each}
+      <AgentActions beanId={CENTRAL_SESSION_ID} {agentBusy} />
     {/snippet}
   </ViewToolbar>
 

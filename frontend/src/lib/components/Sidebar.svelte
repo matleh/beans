@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
   import { worktreeStore } from '$lib/worktrees.svelte';
   import { agentStatusesStore } from '$lib/agentStatuses.svelte';
   import { configStore } from '$lib/config.svelte';
@@ -71,7 +72,7 @@
       </svg>
       Planning
       {#if configStore.agentEnabled && agentStatusesStore.isRunning('__central__')}
-        <span class="ml-auto h-2 w-2 shrink-0 animate-pulse rounded-full bg-success"></span>
+        <div class="loader ml-auto shrink-0" transition:fade={{ duration: 200 }}></div>
       {/if}
     </button>
 
@@ -108,21 +109,24 @@
           ]}
         >
           <span class="min-w-0 flex-1 truncate">{item.label}</span>
-          {#if agentStatusesStore.isRunning(item.id)}
-            <span class="h-2 w-2 shrink-0 animate-pulse rounded-full bg-success"></span>
-          {/if}
-          <span
-            role="button"
-            tabindex="-1"
-            onclick={(e) => {
-              e.stopPropagation();
-              confirmingRemoveId = item.id;
-            }}
-            class="cursor-pointer rounded p-1 text-text-faint opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
-            aria-label="Destroy worktree"
-          >
-            <span class="icon-[uil--archive] block size-3.5"></span>
-          </span>
+          <div class="relative ml-auto h-4 w-4 shrink-0">
+            {#if agentStatusesStore.isRunning(item.id)}
+              <div class="loader absolute inset-0" transition:fade={{ duration: 200 }}></div>
+            {:else}
+              <span
+                role="button"
+                tabindex="-1"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  confirmingRemoveId = item.id;
+                }}
+                class="absolute inset-0 flex cursor-pointer items-center justify-center rounded text-text-faint opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                aria-label="Destroy worktree"
+              >
+                <span class="icon-[uil--archive] block size-3.5"></span>
+              </span>
+            {/if}
+          </div>
         </button>
       {/each}
     {/if}
