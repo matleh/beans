@@ -128,7 +128,7 @@
 
     <!-- Panel content -->
     {#if panels[panelIdx].size === undefined}
-      <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {@render panels[panelIdx].content()}
       </div>
     {:else}
