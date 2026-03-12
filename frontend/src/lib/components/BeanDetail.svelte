@@ -160,20 +160,20 @@
       </button>
       <span
         class={[
-          'rounded-full px-2 py-0.5 text-[11px] font-medium',
+          'badge',
           typeColors[bean.type] ?? 'bg-type-task-bg text-type-task-text'
         ]}>{bean.type}</span
       >
       <span
         class={[
-          'rounded-full px-2 py-0.5 text-[11px] font-medium',
+          'badge',
           statusColors[bean.status] ?? 'bg-status-todo-bg text-status-todo-text'
         ]}>{bean.status}</span
       >
       {#if bean.priority && bean.priority !== 'normal'}
         <span
           class={[
-            'rounded-full border px-2 py-0.5 text-[11px] font-medium',
+            'badge border',
             priorityColors[bean.priority]
           ]}
         >
@@ -256,7 +256,7 @@
       <h2 class="mb-2 text-xs font-semibold text-text-muted uppercase">Tags</h2>
       <div class="flex flex-wrap gap-1">
         {#each bean.tags as tag}
-          <span class="rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted"
+          <span class="badge border border-border text-text-muted"
             >{tag}</span
           >
         {/each}

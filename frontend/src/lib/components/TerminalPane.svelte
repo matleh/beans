@@ -127,5 +127,5 @@
 </script>
 
 <div class="flex h-full min-h-0 flex-col bg-[#1a1a2e]">
-  <div class="min-h-0 flex-1 px-1" bind:this={terminalEl}></div>
+  <div class="min-h-0 flex-1 p-2" bind:this={terminalEl}></div>
 </div>

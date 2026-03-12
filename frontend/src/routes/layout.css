@@ -56,6 +56,15 @@ a,
   @apply border-transparent bg-surface-dim text-text-faint hover:text-text-muted;
 }
 
+/* ── Status/type badge ────────────────────────── */
+.badge {
+  @apply rounded px-2 py-0.5 text-[11px] font-medium shadow-[0_1px_0_0_rgba(0,0,0,0.3)];
+}
+
+.badge-sm {
+  @apply rounded px-1.5 py-0.5 text-[10px] font-medium shadow-[0_1px_0_0_rgba(0,0,0,0.3)];
+}
+
 /* ── Bean link ───────────────────────────────── */
 .bean-link {
   @apply inline-flex cursor-pointer rounded bg-accent/10 px-1 align-baseline font-mono text-[0.85em] whitespace-nowrap text-accent no-underline transition-colors hover:border-accent/45 hover:bg-accent/20;

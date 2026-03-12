@@ -128,7 +128,7 @@
     <div class="flex w-75 min-w-65 shrink-0 flex-col" data-status={col.status}>
       <!-- Column header -->
       <div class="mb-3 flex items-center gap-2 px-1">
-        <span class={['rounded-full px-2 py-0.5 text-[11px] font-medium', col.color]}
+        <span class={['badge', col.color]}
           >{col.label}</span
         >
         <span class="text-xs text-text-faint">{beans.length}</span>

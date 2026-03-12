@@ -85,7 +85,7 @@
       <code class="text-[10px] text-text-faint">{bean.id.slice(-4)}</code>
       <span
         class={[
-          'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+          'badge-sm',
           typeColors[bean.type] ?? 'bg-type-task-bg text-type-task-text'
         ]}
       >
@@ -112,7 +112,7 @@
       >
       <span
         class={[
-          'shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+          'shrink-0 badge-sm',
           statusColors[bean.status] ?? 'bg-status-todo-bg text-status-todo-text'
         ]}
       >
