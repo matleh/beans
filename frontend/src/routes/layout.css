@@ -45,7 +45,7 @@ a,
 
 .btn-tab-inactive,
 .btn-toggle-inactive {
-  @apply border-border bg-surface text-text-muted hover:bg-surface-alt;
+  @apply border-transparent bg-surface-dim text-text-muted hover:bg-surface-dim/70;
 }
 
 .btn-tab-sm {
@@ -53,7 +53,7 @@ a,
 }
 
 .btn-tab-sm-inactive {
-  @apply border-border bg-surface text-text-faint hover:text-text-muted;
+  @apply border-transparent bg-surface-dim text-text-faint hover:text-text-muted;
 }
 
 /* ── Bean link ───────────────────────────────── */
