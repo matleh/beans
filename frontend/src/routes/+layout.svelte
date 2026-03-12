@@ -36,7 +36,11 @@
   // Wait for worktreeStore to initialize before checking — otherwise a cold page load
   // to a workspace route would redirect before the subscription delivers data.
   $effect(() => {
-    if (!ui.isPlanning && worktreeStore.initialized && (!configStore.agentEnabled || !worktreeStore.hasWorktree(ui.activeView))) {
+    if (
+      !ui.isPlanning &&
+      worktreeStore.initialized &&
+      (!configStore.agentEnabled || !worktreeStore.hasWorktree(ui.activeView))
+    ) {
       ui.navigateTo('planning');
     }
   });
@@ -65,7 +69,14 @@
       </div>
     </div>
   {:else}
-    <SplitPane direction="horizontal" side="start" initialSize={224} minSize={150} maxSize={400} persistKey="sidebar">
+    <SplitPane
+      direction="horizontal"
+      side="start"
+      initialSize={224}
+      minSize={150}
+      maxSize={400}
+      persistKey="sidebar"
+    >
       {#snippet aside()}
         <Sidebar />
       {/snippet}

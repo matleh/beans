@@ -1,5 +1,16 @@
+@import '@fontsource-variable/rubik';
+@import '@fontsource-variable/roboto-mono';
 @import 'tailwindcss';
 @plugin '@iconify/tailwind4';
+
+@theme {
+  --font-sans:
+    'Rubik Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono:
+    'Roboto Mono Variable', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+}
 
 button,
 a,
@@ -270,15 +281,15 @@ button:disabled {
 /* ── Dark palette ────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --th-surface: var(--color-zinc-900);
-    --th-surface-alt: var(--color-zinc-800);
-    --th-surface-dim: var(--color-zinc-700);
-    --th-border: var(--color-zinc-700);
-    --th-text: var(--color-zinc-300);
-    --th-text-muted: var(--color-zinc-400);
-    --th-text-faint: var(--color-zinc-500);
-    --th-accent: var(--color-sky-400);
-    --th-accent-text: var(--color-zinc-900);
+    --th-surface: var(--color-mauve-900);
+    --th-surface-alt: var(--color-mauve-800);
+    --th-surface-dim: var(--color-mauve-700);
+    --th-border: var(--color-mauve-700);
+    --th-text: var(--color-mauve-300);
+    --th-text-muted: var(--color-mauve-400);
+    --th-text-faint: var(--color-mauve-500);
+    --th-accent: var(--color-mauve-400);
+    --th-accent-text: var(--color-mauve-900);
     --th-danger: var(--color-red-500);
     --th-warning: var(--color-amber-500);
     --th-success: var(--color-green-500);
@@ -318,7 +329,7 @@ button:disabled {
     --th-md-h3: var(--color-slate-400);
     --th-md-h456: var(--color-slate-400);
     --th-md-h1-border: var(--color-zinc-600);
-    --th-md-code-bg: var(--color-zinc-800);
+    --th-md-code-bg: var(--color-mauve-700);
   }
 }
 
