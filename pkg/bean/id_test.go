@@ -154,6 +154,41 @@ func TestNewID(t *testing.T) {
 			seen[id] = true
 		}
 	})
+
+	t.Run("never contains blocked words", func(t *testing.T) {
+		for i := 0; i < 10000; i++ {
+			id := NewID("", 4)
+			if containsBlockedWord(id) {
+				t.Errorf("NewID generated ID containing blocked word: %q", id)
+			}
+		}
+	})
+}
+
+func TestContainsBlockedWord(t *testing.T) {
+	tests := []struct {
+		id      string
+		blocked bool
+	}{
+		{"cock", true},
+		{"nazi", true},
+		{"dick", true},
+		{"fuck", true},
+		{"ab3d", false},
+		{"z7x2", false},
+		{"safe", false},
+		{"naz1", true},  // contains "naz" substring
+		{"sass", true},  // contains "ass"
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			got := containsBlockedWord(tt.id)
+			if got != tt.blocked {
+				t.Errorf("containsBlockedWord(%q) = %v, want %v", tt.id, got, tt.blocked)
+			}
+		})
+	}
 }
 
 func TestParseFilenameAndBuildFilenameRoundtrip(t *testing.T) {

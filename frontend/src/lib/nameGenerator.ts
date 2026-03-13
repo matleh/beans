@@ -1,5 +1,35 @@
 import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 
+/** Words to exclude from generated workspace names. */
+const blocklist = new Set([
+	'aggressive',
+	'angry',
+	'bloody',
+	'crude',
+	'cruel',
+	'dead',
+	'dirty',
+	'drunk',
+	'evil',
+	'fat',
+	'fatal',
+	'hostile',
+	'lazy',
+	'naked',
+	'naughty',
+	'sexual',
+	'stupid',
+	'toxic',
+	'ugly',
+	'vicious',
+	'violent',
+	'wicked'
+]);
+
+/** Pre-filtered dictionaries with blocked words removed. */
+export const safeAdjectives = adjectives.filter((w) => !blocklist.has(w));
+const safeAnimals = animals.filter((w) => !blocklist.has(w));
+
 function randomSuffix(length = 4): string {
 	const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
 	let result = '';
@@ -11,7 +41,7 @@ function randomSuffix(length = 4): string {
 
 export function generateWorkspaceName(): string {
 	const base = uniqueNamesGenerator({
-		dictionaries: [adjectives, animals],
+		dictionaries: [safeAdjectives, safeAnimals],
 		separator: '-',
 		length: 2
 	});

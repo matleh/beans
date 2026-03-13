@@ -10,13 +10,51 @@ import (
 
 const idAlphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
 
-// NewID generates a new NanoID for a bean with an optional prefix and configurable length.
-func NewID(prefix string, length int) string {
-	id, err := gonanoid.Generate(idAlphabet, length)
-	if err != nil {
-		panic(err) // should never happen with valid alphabet
+// blockedIDWords contains offensive words that could appear in generated IDs
+// using the [a-z0-9] alphabet. Only includes words 3-4 chars long since
+// default IDs are 4 characters.
+var blockedIDWords = []string{
+	"ass", "cum", "fag", "fu0k", "fuck", "fuk",
+	"gay", "god",
+	"ho3", "hoe",
+	"jiz",
+	"kkk", "kum",
+	"naz", "nig",
+	"poo",
+	"rap", "rim",
+	"s3x", "sex", "sh1t", "shit", "slut",
+	"tit", "twat",
+	"wop",
+	// Specific 4-char words
+	"anus", "cock", "coon", "crap", "damn", "dick", "dumb",
+	"dyke", "gook", "homo", "jerk", "kike", "knob", "lmao",
+	"muff", "nazi", "nob", "oral", "piss", "poop",
+	"porn", "pube", "puss", "rape", "scum", "slag",
+	"slob", "smeg", "spic", "suck", "turd", "wank",
+}
+
+// containsBlockedWord checks if the given ID contains any blocked substring.
+func containsBlockedWord(id string) bool {
+	for _, word := range blockedIDWords {
+		if strings.Contains(id, word) {
+			return true
+		}
 	}
-	return prefix + id
+	return false
+}
+
+// NewID generates a new NanoID for a bean with an optional prefix and configurable length.
+// It regenerates if the ID contains an offensive word.
+func NewID(prefix string, length int) string {
+	for {
+		id, err := gonanoid.Generate(idAlphabet, length)
+		if err != nil {
+			panic(err) // should never happen with valid alphabet
+		}
+		if !containsBlockedWord(id) {
+			return prefix + id
+		}
+	}
 }
 
 // ParseFilename extracts the ID and optional slug from a bean filename.
