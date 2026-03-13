@@ -43,10 +43,11 @@
     stuckToBottom = scrollHeight - scrollTop - clientHeight < 20;
   }
 
-  // Auto-scroll to bottom when messages change, but only if the user
-  // hasn't scrolled up to read earlier messages.
+  // Auto-scroll to bottom when messages change or markdown finishes rendering,
+  // but only if the user hasn't scrolled up to read earlier messages.
   $effect(() => {
     messages.length;
+    renderedMessages.size;
     if (messagesEl && stuckToBottom) {
       requestAnimationFrame(() => {
         if (messagesEl) {
