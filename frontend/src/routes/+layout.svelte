@@ -22,14 +22,20 @@
     ui.showPlanningChat = data.showPlanningChat;
     ui.showChanges = data.showChanges;
     ui.filterText = data.filterText;
-    if (data.selectedBeanId) {
-      ui.selectedBeanId = data.selectedBeanId;
-    }
   });
 
   // Sync UIState from URL path on every navigation
   $effect(() => {
     ui.syncFromUrl(page.url.pathname);
+  });
+
+  // Hydrate initial bean selection from URL ?bean= param (once, after activeView is set)
+  let initialBeanApplied = false;
+  $effect(() => {
+    if (!initialBeanApplied && data.selectedBeanId) {
+      initialBeanApplied = true;
+      ui.selectBeanById(data.selectedBeanId);
+    }
   });
 
   // Fall back to planning view if agents are disabled or the workspace's worktree is removed.

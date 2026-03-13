@@ -16,13 +16,20 @@ class UIState {
   /** Sync UIState from URL path. Called reactively from layout on every navigation. */
   syncFromUrl(pathname: string) {
     const workspaceMatch = pathname.match(/^\/workspace\/([^/]+)/);
+    const newView = workspaceMatch ? workspaceMatch[1] : 'planning';
+    const viewChanged = newView !== this.activeView;
+
     if (workspaceMatch) {
       this.activeView = workspaceMatch[1];
-      return;
+    } else {
+      this.activeView = 'planning';
+      this.planningView = pathname === '/planning/board' ? 'board' : 'backlog';
     }
 
-    this.activeView = 'planning';
-    this.planningView = pathname === '/planning/board' ? 'board' : 'backlog';
+    // Restore the remembered bean selection in the URL only when switching views
+    if (viewChanged) {
+      this.syncSelectedBeanToUrl();
+    }
   }
 
   /** Navigate to a view via URL routing. */
@@ -39,8 +46,17 @@ class UIState {
     goto(view === 'board' ? '/planning/board' : '/planning');
   }
 
-  // Selected bean ID (source of truth)
-  selectedBeanId = $state<string | null>(null);
+  // Per-view selected bean ID (keyed by activeView: 'planning' or worktree ID)
+  private selectedBeanByView = $state<Record<string, string | null>>({});
+
+  // Selected bean ID for the current view
+  get selectedBeanId(): string | null {
+    return this.selectedBeanByView[this.activeView] ?? null;
+  }
+
+  set selectedBeanId(id: string | null) {
+    this.selectedBeanByView[this.activeView] = id;
+  }
 
   // Resolved bean from store
   get currentBean(): Bean | null {
