@@ -4,11 +4,19 @@ import { client } from './graphqlClient';
 
 export const MAIN_WORKSPACE_ID = '__main__';
 
+export interface WorktreeBean {
+  id: string;
+  title: string;
+  status: string;
+  type: string;
+}
+
 export interface Worktree {
   id: string;
   name: string | null;
   branch: string;
   path: string;
+  beans: WorktreeBean[];
 }
 
 const WORKTREE_FIELDS = `
@@ -16,6 +24,12 @@ const WORKTREE_FIELDS = `
   name
   branch
   path
+  beans {
+    id
+    title
+    status
+    type
+  }
 `;
 
 const WORKTREES_SUBSCRIPTION = gql`

@@ -200,6 +200,7 @@ type ComplexityRoot struct {
 	}
 
 	Worktree struct {
+		Beans  func(childComplexity int) int
 		Branch func(childComplexity int) int
 		ID     func(childComplexity int) int
 		Name   func(childComplexity int) int
@@ -1074,6 +1075,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Subscription.WorktreesChanged(childComplexity), true
 
+	case "Worktree.beans":
+		if e.complexity.Worktree.Beans == nil {
+			break
+		}
+
+		return e.complexity.Worktree.Beans(childComplexity), true
 	case "Worktree.branch":
 		if e.complexity.Worktree.Branch == nil {
 			break
@@ -4567,6 +4574,8 @@ func (ec *executionContext) fieldContext_Mutation_createWorktree(ctx context.Con
 				return ec.fieldContext_Worktree_branch(ctx, field)
 			case "path":
 				return ec.fieldContext_Worktree_path(ctx, field)
+			case "beans":
+				return ec.fieldContext_Worktree_beans(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Worktree", field.Name)
 		},
@@ -5331,6 +5340,8 @@ func (ec *executionContext) fieldContext_Query_worktrees(_ context.Context, fiel
 				return ec.fieldContext_Worktree_branch(ctx, field)
 			case "path":
 				return ec.fieldContext_Worktree_path(ctx, field)
+			case "beans":
+				return ec.fieldContext_Worktree_beans(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Worktree", field.Name)
 		},
@@ -6034,6 +6045,8 @@ func (ec *executionContext) fieldContext_Subscription_worktreesChanged(_ context
 				return ec.fieldContext_Worktree_branch(ctx, field)
 			case "path":
 				return ec.fieldContext_Worktree_path(ctx, field)
+			case "beans":
+				return ec.fieldContext_Worktree_beans(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Worktree", field.Name)
 		},
@@ -6252,6 +6265,83 @@ func (ec *executionContext) fieldContext_Worktree_path(_ context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Worktree_beans(ctx context.Context, field graphql.CollectedField, obj *model.Worktree) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Worktree_beans,
+		func(ctx context.Context) (any, error) {
+			return obj.Beans, nil
+		},
+		nil,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋpkgᚋbeanᚐBeanᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Worktree_beans(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Worktree",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Bean_id(ctx, field)
+			case "slug":
+				return ec.fieldContext_Bean_slug(ctx, field)
+			case "path":
+				return ec.fieldContext_Bean_path(ctx, field)
+			case "title":
+				return ec.fieldContext_Bean_title(ctx, field)
+			case "status":
+				return ec.fieldContext_Bean_status(ctx, field)
+			case "type":
+				return ec.fieldContext_Bean_type(ctx, field)
+			case "priority":
+				return ec.fieldContext_Bean_priority(ctx, field)
+			case "tags":
+				return ec.fieldContext_Bean_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Bean_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Bean_updatedAt(ctx, field)
+			case "body":
+				return ec.fieldContext_Bean_body(ctx, field)
+			case "order":
+				return ec.fieldContext_Bean_order(ctx, field)
+			case "etag":
+				return ec.fieldContext_Bean_etag(ctx, field)
+			case "isDirty":
+				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "parentId":
+				return ec.fieldContext_Bean_parentId(ctx, field)
+			case "blockingIds":
+				return ec.fieldContext_Bean_blockingIds(ctx, field)
+			case "blockedByIds":
+				return ec.fieldContext_Bean_blockedByIds(ctx, field)
+			case "blockedBy":
+				return ec.fieldContext_Bean_blockedBy(ctx, field)
+			case "blocking":
+				return ec.fieldContext_Bean_blocking(ctx, field)
+			case "parent":
+				return ec.fieldContext_Bean_parent(ctx, field)
+			case "children":
+				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
 	}
 	return fc, nil
@@ -9758,6 +9848,11 @@ func (ec *executionContext) _Worktree(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "path":
 			out.Values[i] = ec._Worktree_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "beans":
+			out.Values[i] = ec._Worktree_beans(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

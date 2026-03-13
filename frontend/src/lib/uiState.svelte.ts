@@ -52,6 +52,11 @@ class UIState {
     this.syncSelectedBeanToUrl();
   }
 
+  selectBeanById(id: string) {
+    this.selectedBeanId = id;
+    this.syncSelectedBeanToUrl();
+  }
+
   clearSelection() {
     this.selectedBeanId = null;
     this.syncSelectedBeanToUrl();

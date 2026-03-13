@@ -243,6 +243,12 @@ func (c *Core) handleWorktreeChanges(wt *worktreeWatcher, changes map[string]fsn
 
 	// Fan out events to subscribers
 	c.fanOut(events)
+
+	// Notify worktree manager so the worktree subscription re-emits
+	// with updated detected bean IDs
+	if len(events) > 0 && c.onWorktreeBeansChanged != nil {
+		c.onWorktreeBeansChanged()
+	}
 }
 
 // loadBeanFrom reads and parses a bean file, calculating its relative path from the given root.

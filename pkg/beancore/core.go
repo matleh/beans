@@ -59,7 +59,8 @@ type Core struct {
 	watching          bool
 	done              chan struct{}
 	onChange          func() // callback when beans change (legacy API)
-	worktreeWatchers  map[string]*worktreeWatcher // worktree path -> watcher
+	worktreeWatchers       map[string]*worktreeWatcher // worktree path -> watcher
+	onWorktreeBeansChanged func() // called when worktree bean files change
 
 	// Event subscribers (for channel-based API)
 	subscribers map[uint64]*subscription
@@ -80,6 +81,13 @@ func New(root string, cfg *config.Config) *Core {
 		subscribers: make(map[uint64]*subscription),
 		warnWriter:  os.Stderr,
 	}
+}
+
+// SetOnWorktreeBeansChanged sets a callback that fires whenever bean files
+// change in a watched worktree. This is used to trigger worktree subscription
+// refreshes so the frontend sees updated bean lists.
+func (c *Core) SetOnWorktreeBeansChanged(fn func()) {
+	c.onWorktreeBeansChanged = fn
 }
 
 // SetWarnWriter sets the writer for warning messages.

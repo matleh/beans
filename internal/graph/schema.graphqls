@@ -472,6 +472,8 @@ type Worktree {
   branch: String!
   "Filesystem path to the worktree"
   path: String!
+  "Beans detected from changes in this worktree vs the base branch"
+  beans: [Bean!]!
 }
 
 """

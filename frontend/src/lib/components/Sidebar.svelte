@@ -1,6 +1,10 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
-  import { worktreeStore, MAIN_WORKSPACE_ID } from '$lib/worktrees.svelte';
+  import {
+    worktreeStore,
+    MAIN_WORKSPACE_ID,
+    type WorktreeBean
+  } from '$lib/worktrees.svelte';
   import { agentStatusesStore } from '$lib/agentStatuses.svelte';
   import { configStore } from '$lib/config.svelte';
   import { ui } from '$lib/uiState.svelte';
@@ -11,15 +15,17 @@
   interface WorkspaceItem {
     id: string;
     label: string;
+    beans: WorktreeBean[];
   }
 
-  const mainWorkspace: WorkspaceItem = { id: MAIN_WORKSPACE_ID, label: 'main' };
+  const mainWorkspace: WorkspaceItem = { id: MAIN_WORKSPACE_ID, label: 'main', beans: [] };
 
   const workspaceItems = $derived([
     mainWorkspace,
     ...worktreeStore.worktrees.map((wt): WorkspaceItem => ({
       id: wt.id,
-      label: wt.name ?? wt.branch
+      label: wt.name ?? wt.branch,
+      beans: wt.beans ?? []
     }))
   ]);
 
@@ -129,6 +135,23 @@
             {/if}
           </div>
         </button>
+
+        {#if item.beans.length > 0}
+          {#each item.beans as wtBean (wtBean.id)}
+            <button
+              onclick={() => {
+                ui.navigateTo('planning');
+                ui.selectBeanById(wtBean.id);
+              }}
+              class={[
+                'flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-3 pl-8 text-left text-xs transition-colors',
+                'text-text-faint hover:bg-surface hover:text-text-muted'
+              ]}
+            >
+              <span class="min-w-0 flex-1 truncate">{wtBean.title}</span>
+            </button>
+          {/each}
+        {/if}
       {/each}
     {/if}
   </div>

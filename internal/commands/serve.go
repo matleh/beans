@@ -146,6 +146,12 @@ func runServer(port int, origins []string) error {
 	}, agent.DefaultMode(cfg.GetDefaultMode()))
 	defer agentMgr.Shutdown()
 
+	// When bean files change in a worktree, also notify the worktree manager
+	// so the worktree subscription re-emits with updated detected bean IDs.
+	if wtManager != nil {
+		core.SetOnWorktreeBeansChanged(wtManager.Notify)
+	}
+
 	// Create GraphQL server with explicit transports
 	es := graph.NewExecutableSchema(graph.Config{
 		Resolvers: &graph.Resolver{

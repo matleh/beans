@@ -310,6 +310,8 @@ type Worktree struct {
 	Branch string `json:"branch"`
 	// Filesystem path to the worktree
 	Path string `json:"path"`
+	// Beans detected from changes in this worktree vs the base branch
+	Beans []*bean.Bean `json:"beans"`
 }
 
 // Role of an agent message sender

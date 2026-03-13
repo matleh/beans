@@ -9,18 +9,23 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
+
+	"github.com/hmans/beans/internal/gitutil"
+	"github.com/hmans/beans/pkg/bean"
 )
 
 const branchPrefix = "beans/"
 
 // Worktree represents a git worktree.
 type Worktree struct {
-	ID     string
-	Branch string
-	Path   string
-	Name   string // Human-readable name
+	ID      string
+	Branch  string
+	Path    string
+	Name    string   // Human-readable name
+	BeanIDs []string // Bean IDs detected from changes vs base branch
 }
 
 // Manager handles git worktree operations for a repository.
@@ -70,6 +75,12 @@ func (m *Manager) Unsubscribe(ch chan struct{}) {
 	}
 }
 
+// Notify sends a signal to all subscribers. Exported so external watchers
+// (e.g., the worktree bean file watcher) can trigger a refresh.
+func (m *Manager) Notify() {
+	m.notify()
+}
+
 // notify sends a signal to all subscribers.
 func (m *Manager) notify() {
 	m.subMu.Lock()
@@ -102,6 +113,7 @@ func (m *Manager) List() ([]Worktree, error) {
 		if meta := m.loadMeta(worktrees[i].ID); meta != nil {
 			worktrees[i].Name = meta.Name
 		}
+		worktrees[i].BeanIDs = m.DetectBeanIDs(worktrees[i].Path)
 	}
 
 	return worktrees, nil
@@ -152,6 +164,46 @@ func parsePorcelain(output string) []Worktree {
 	emit()
 
 	return worktrees
+}
+
+// DetectBeanIDs returns bean IDs found in the worktree's diff vs the base branch.
+// It filters for .beans/*.md files, excluding dot-prefixed subdirs (like .worktrees/,
+// .conversations/) and the archive/ directory.
+func (m *Manager) DetectBeanIDs(worktreePath string) []string {
+	changes, err := gitutil.AllChangesVsUpstream(worktreePath, m.baseRef)
+	if err != nil {
+		return nil
+	}
+
+	seen := make(map[string]bool)
+	var ids []string
+
+	for _, change := range changes {
+		// Must be directly under .beans/ and end with .md
+		rest, ok := strings.CutPrefix(change.Path, ".beans/")
+		if !ok {
+			continue
+		}
+
+		// Exclude subdirectories: anything with a / is nested
+		if strings.Contains(rest, "/") {
+			continue
+		}
+
+		// Must be a .md file
+		if !strings.HasSuffix(rest, ".md") {
+			continue
+		}
+
+		id, _ := bean.ParseFilename(rest)
+		if id != "" && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+
+	sort.Strings(ids)
+	return ids
 }
 
 // Create creates a new git worktree with the given name.
