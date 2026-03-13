@@ -81,7 +81,7 @@
         />
       </svg>
       Planning
-      {#if configStore.agentEnabled && agentStatusesStore.isRunning('__central__')}
+      {#if configStore.agentEnabled && agentStatusesStore.isRunning(MAIN_WORKSPACE_ID)}
         <div class="loader ml-auto shrink-0" transition:fade={{ duration: 200 }}></div>
       {/if}
     </button>

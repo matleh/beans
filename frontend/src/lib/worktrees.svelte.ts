@@ -3,7 +3,7 @@ import { pipe, subscribe } from 'wonka';
 import { client } from './graphqlClient';
 import { generateWorkspaceName } from '$lib/nameGenerator';
 
-export const MAIN_WORKSPACE_ID = '__main__';
+export const MAIN_WORKSPACE_ID = '__central__';
 
 export interface Worktree {
   id: string;

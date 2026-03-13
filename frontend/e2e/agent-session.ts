@@ -101,7 +101,7 @@ class AgentSessionBuilder {
     }
 
     // 2. Navigate to the main workspace (agent chat is always visible there)
-    await page.goto(this.baseURL + '/workspace/__main__');
+    await page.goto(this.baseURL + `/workspace/${this.beanId}`);
 
     // Wait for messages to load if we seeded any
     if (this.messages.length > 0) {

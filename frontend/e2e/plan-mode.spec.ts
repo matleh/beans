@@ -11,7 +11,7 @@ test.describe('Plan mode approval flow', () => {
     page,
     beans
   }) => {
-    await agentSession('__main__', beans)
+    await agentSession('__central__', beans)
       .withMessages(planMessages)
       .inPlanMode()
       .withPendingInteraction({
@@ -40,7 +40,7 @@ test.describe('Plan mode approval flow', () => {
   });
 
   test('ENTER_PLAN interaction type does not show approval UI', async ({ page, beans }) => {
-    await agentSession('__main__', beans)
+    await agentSession('__central__', beans)
       .withMessages(planMessages)
       .withPendingInteraction({ type: 'ENTER_PLAN' })
       .open(page);
@@ -55,7 +55,7 @@ test.describe('Plan mode approval flow', () => {
   });
 
   test('Plan/Act mode toggle reflects session state', async ({ page, beans }) => {
-    await agentSession('__main__', beans)
+    await agentSession('__central__', beans)
       .withMessages(planMessages)
       .inPlanMode()
       .open(page);

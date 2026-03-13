@@ -33,6 +33,11 @@ You already know what beans is. This is the beans repository.
 - The `startWork` mutation uses `WithPersist(false)` — status changes are runtime-only until the PR merges.
 - When a PR merges and the bean file lands on main, the main watcher picks it up and the dirty flag clears.
 
+# Agent Architecture
+
+- The central (main workspace) agent session uses ID `__central__` (defined as `CentralSessionID` in `internal/graph/resolver.go` and `MAIN_WORKSPACE_ID` in `frontend/src/lib/worktrees.svelte.ts`). These must stay in sync — the backend uses this ID to determine work directory and system prompt.
+- Worktree agent sessions use the worktree ID as their session ID.
+
 # Extra rules for our own beans/issues
 
 - Use the `idea` tag for ideas and proposals.
