@@ -130,15 +130,16 @@
         {:else if msg.role === 'TOOL'}
           <div class="text-text-faint">
             <div class="flex gap-2">
-              <span class="shrink-0 select-none">&middot;</span>
               {#if msg.diff}
                 <button
-                  class="cursor-pointer text-left hover:text-text-muted"
+                  class="flex cursor-pointer gap-2 text-left hover:text-text-muted"
                   onclick={() => toggleDiff(i)}
                 >
-                  <span class="mr-1 inline-block w-2 select-none">{expandedDiffs.has(i) ? '▾' : '▸'}</span>{msg.content}
+                  <span class="shrink-0 select-none">{expandedDiffs.has(i) ? '▾' : '▸'}</span>
+                  <span>{msg.content}</span>
                 </button>
               {:else}
+                <span class="shrink-0 select-none">&middot;</span>
                 <span>{msg.content}</span>
               {/if}
             </div>
