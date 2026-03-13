@@ -1,7 +1,6 @@
 package beancore
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -101,19 +100,19 @@ Working on this in a worktree.
 		}
 	})
 
-	t.Run("ignores deletes from worktree", func(t *testing.T) {
+	t.Run("delete in worktree reverts to main-repo version", func(t *testing.T) {
 		core, _ := setupTestCore(t)
 
 		// Create a bean in the main repo
-		createTestBean(t, core, "wt-del-1", "Should Survive", "todo")
+		createTestBean(t, core, "wt-del-1", "Original Title", "todo")
 
-		// Create a worktree with the same bean
+		// Create a worktree with a modified version of the bean
 		wtDir := t.TempDir()
 		wtBeansDir := filepath.Join(wtDir, BeansDir)
 		os.MkdirAll(wtBeansDir, 0755)
 
-		content := fmt.Sprintf("---\ntitle: Should Survive\nstatus: todo\ntype: task\n---\n")
-		beanPath := filepath.Join(wtBeansDir, "wt-del-1--should-survive.md")
+		content := "---\ntitle: Modified in Worktree\nstatus: in-progress\ntype: task\n---\n"
+		beanPath := filepath.Join(wtBeansDir, "wt-del-1--original-title.md")
 		os.WriteFile(beanPath, []byte(content), 0644)
 
 		// Start watching the worktree
@@ -122,6 +121,18 @@ Working on this in a worktree.
 		}
 		defer core.UnwatchWorktreeBeans(wtDir)
 
+		// Wait for initial load to merge the worktree version
+		time.Sleep(100 * time.Millisecond)
+
+		// Verify the worktree version was merged
+		got, err := core.Get("wt-del-1")
+		if err != nil {
+			t.Fatalf("Get() error = %v", err)
+		}
+		if got.Title != "Modified in Worktree" {
+			t.Errorf("Title = %q, want %q (worktree version should be active)", got.Title, "Modified in Worktree")
+		}
+
 		// Subscribe to events
 		events, unsub := core.Subscribe()
 		defer unsub()
@@ -129,25 +140,93 @@ Working on this in a worktree.
 		// Delete the bean from the worktree
 		os.Remove(beanPath)
 
-		// Wait a bit — no event should be emitted
+		// Should emit an Updated event reverting to the main-repo version
 		select {
 		case batch := <-events:
+			found := false
 			for _, ev := range batch {
-				if ev.BeanID == "wt-del-1" && ev.Type == EventDeleted {
-					t.Error("should not emit delete event for worktree bean removal")
+				if ev.BeanID == "wt-del-1" && ev.Type == EventUpdated {
+					found = true
+					if ev.Bean.Title != "Original Title" {
+						t.Errorf("reverted Title = %q, want %q", ev.Bean.Title, "Original Title")
+					}
 				}
 			}
-		case <-time.After(300 * time.Millisecond):
-			// Good — no event
+			if !found {
+				t.Error("expected EventUpdated reverting to main-repo version")
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for revert event")
 		}
 
-		// Bean should still exist in memory
-		got, err := core.Get("wt-del-1")
+		// Bean should still exist and be reverted to main-repo version
+		got, err = core.Get("wt-del-1")
 		if err != nil {
 			t.Fatalf("bean should still exist after worktree delete, got error: %v", err)
 		}
-		if got.Title != "Should Survive" {
-			t.Errorf("Title = %q, want %q", got.Title, "Should Survive")
+		if got.Title != "Original Title" {
+			t.Errorf("Title = %q, want %q", got.Title, "Original Title")
+		}
+
+		// Should no longer be dirty
+		if core.IsDirty("wt-del-1") {
+			t.Error("bean should not be dirty after reverting to main-repo version")
+		}
+	})
+
+	t.Run("delete worktree-only bean removes from runtime", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		// Create a worktree with a bean that doesn't exist in main
+		wtDir := t.TempDir()
+		wtBeansDir := filepath.Join(wtDir, BeansDir)
+		os.MkdirAll(wtBeansDir, 0755)
+
+		content := "---\ntitle: Worktree Only\nstatus: todo\ntype: task\n---\n"
+		beanPath := filepath.Join(wtBeansDir, "wt-only-1--worktree-only.md")
+		os.WriteFile(beanPath, []byte(content), 0644)
+
+		// Start watching — initial scan loads the bean
+		if err := core.WatchWorktreeBeans(wtDir); err != nil {
+			t.Fatalf("WatchWorktreeBeans() error = %v", err)
+		}
+		defer core.UnwatchWorktreeBeans(wtDir)
+
+		// Verify the bean was loaded
+		got, err := core.Get("wt-only-1")
+		if err != nil {
+			t.Fatalf("bean should exist after initial load, got error: %v", err)
+		}
+		if got.Title != "Worktree Only" {
+			t.Errorf("Title = %q, want %q", got.Title, "Worktree Only")
+		}
+
+		// Subscribe to events
+		events, unsub := core.Subscribe()
+		defer unsub()
+
+		// Delete the bean from the worktree
+		os.Remove(beanPath)
+
+		// Should emit a Deleted event
+		select {
+		case batch := <-events:
+			found := false
+			for _, ev := range batch {
+				if ev.BeanID == "wt-only-1" && ev.Type == EventDeleted {
+					found = true
+				}
+			}
+			if !found {
+				t.Error("expected EventDeleted for worktree-only bean")
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for delete event")
+		}
+
+		// Bean should no longer exist
+		if _, err := core.Get("wt-only-1"); err != ErrNotFound {
+			t.Errorf("expected ErrNotFound after delete, got %v", err)
 		}
 	})
 

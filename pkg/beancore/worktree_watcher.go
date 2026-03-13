@@ -219,9 +219,8 @@ func (c *Core) worktreeWatchLoop(wt *worktreeWatcher, watcher *fsnotify.Watcher)
 }
 
 // handleWorktreeChanges processes bean file changes from a worktree.
-// Changed beans are merged into runtime state as dirty (not persisted to main disk).
-// Deletions in worktrees are ignored — we don't remove beans from runtime when a
-// worktree's copy is deleted.
+// Creates/writes are merged into runtime state as dirty.
+// Deletes either revert to the main-repo version or remove the bean from runtime.
 func (c *Core) handleWorktreeChanges(wt *worktreeWatcher, changes map[string]fsnotify.Op) {
 	if len(changes) == 0 {
 		return
@@ -232,13 +231,61 @@ func (c *Core) handleWorktreeChanges(wt *worktreeWatcher, changes map[string]fsn
 	var events []BeanEvent
 
 	for path, op := range changes {
-		// Only handle creates/writes — ignore deletes from worktrees.
-		// A worktree deleting a bean file doesn't mean the bean is deleted globally.
-		if op&fsnotify.Create == 0 && op&fsnotify.Write == 0 {
+		isDelete := op&fsnotify.Remove != 0 || op&fsnotify.Rename != 0
+		isCreateOrWrite := op&fsnotify.Create != 0 || op&fsnotify.Write != 0
+
+		if isDelete && !isCreateOrWrite {
+			// File was deleted in the worktree. Either revert to the
+			// main-repo version or remove the bean from runtime.
+			filename := filepath.Base(path)
+			id, _ := bean.ParseFilename(filename)
+			if id == "" {
+				continue
+			}
+
+			// Try to load from the main .beans/ directory.
+			// The filename may differ (different slug), so search by ID.
+			mainPath := c.findMainBeanFile(id)
+			if mainPath != "" {
+				mainBean, err := c.loadBeanFrom(mainPath, c.root)
+				if err != nil {
+					continue
+				}
+				// Bean exists in main — revert to that version
+				c.beans[id] = mainBean
+				delete(c.dirty, id)
+
+				if c.searchIndex != nil {
+					_ = c.searchIndex.IndexBean(mainBean)
+				}
+
+				events = append(events, BeanEvent{
+					Type:   EventUpdated,
+					Bean:   mainBean,
+					BeanID: id,
+				})
+			} else if _, existed := c.beans[id]; existed {
+				// Bean was worktree-only — remove from runtime
+				delete(c.beans, id)
+				delete(c.dirty, id)
+
+				if c.searchIndex != nil {
+					_ = c.searchIndex.DeleteBean(id)
+				}
+
+				events = append(events, BeanEvent{
+					Type:   EventDeleted,
+					BeanID: id,
+				})
+			}
 			continue
 		}
 
-		// Check the file still exists
+		if !isCreateOrWrite {
+			continue
+		}
+
+		// Check the file still exists (handles rapid create+delete)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			continue
 		}
@@ -285,6 +332,26 @@ func (c *Core) handleWorktreeChanges(wt *worktreeWatcher, changes map[string]fsn
 	if len(events) > 0 && c.onWorktreeBeansChanged != nil {
 		c.onWorktreeBeansChanged()
 	}
+}
+
+// findMainBeanFile searches the main .beans/ directory for a file matching the
+// given bean ID. Returns the full path or empty string if not found.
+// Must be called with c.mu held.
+func (c *Core) findMainBeanFile(id string) string {
+	entries, err := os.ReadDir(c.root)
+	if err != nil {
+		return ""
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		fileID, _ := bean.ParseFilename(entry.Name())
+		if fileID == id {
+			return filepath.Join(c.root, entry.Name())
+		}
+	}
+	return ""
 }
 
 // loadBeanFrom reads and parses a bean file, calculating its relative path from the given root.
