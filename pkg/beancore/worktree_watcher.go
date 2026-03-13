@@ -90,7 +90,8 @@ func (c *Core) WatchWorktreeBeans(worktreePath string) error {
 }
 
 // loadWorktreeBeansInitial scans a worktree's .beans/ directory and loads
-// all existing bean files into the runtime state as dirty.
+// bean files that differ from the main version into runtime state.
+// Only beans that are new or modified compared to main are loaded and linked.
 func (c *Core) loadWorktreeBeansInitial(wt *worktreeWatcher) {
 	entries, err := os.ReadDir(wt.beansDir)
 	if err != nil {
@@ -111,8 +112,17 @@ func (c *Core) loadWorktreeBeansInitial(wt *worktreeWatcher) {
 			continue
 		}
 
+		// Only load and link if the bean differs from the main version.
+		// Worktrees branch from main, so most beans are identical copies.
+		if existing, exists := c.beans[newBean.ID]; exists {
+			if existing.ETag() == newBean.ETag() {
+				continue // Same content as main — skip
+			}
+		}
+
 		c.beans[newBean.ID] = newBean
 		c.dirty[newBean.ID] = true
+		c.worktreeLinks[newBean.ID] = wt.worktreePath
 
 		if c.searchIndex != nil {
 			_ = c.searchIndex.IndexBean(newBean)
@@ -126,6 +136,12 @@ func (c *Core) UnwatchWorktreeBeans(worktreePath string) {
 	wt, exists := c.worktreeWatchers[worktreePath]
 	if exists {
 		delete(c.worktreeWatchers, worktreePath)
+		// Clear all worktree links for this worktree
+		for id, wtp := range c.worktreeLinks {
+			if wtp == worktreePath {
+				delete(c.worktreeLinks, id)
+			}
+		}
 	}
 	c.mu.Unlock()
 
@@ -140,6 +156,7 @@ func (c *Core) UnwatchAllWorktrees() {
 	c.mu.Lock()
 	watchers := c.worktreeWatchers
 	c.worktreeWatchers = make(map[string]*worktreeWatcher)
+	c.worktreeLinks = make(map[string]string)
 	c.mu.Unlock()
 
 	for _, wt := range watchers {
@@ -254,6 +271,7 @@ func (c *Core) handleWorktreeChanges(wt *worktreeWatcher, changes map[string]fsn
 				// Bean exists in main — revert to that version
 				c.beans[id] = mainBean
 				delete(c.dirty, id)
+				delete(c.worktreeLinks, id)
 
 				if c.searchIndex != nil {
 					_ = c.searchIndex.IndexBean(mainBean)
@@ -268,6 +286,7 @@ func (c *Core) handleWorktreeChanges(wt *worktreeWatcher, changes map[string]fsn
 				// Bean was worktree-only — remove from runtime
 				delete(c.beans, id)
 				delete(c.dirty, id)
+				delete(c.worktreeLinks, id)
 
 				if c.searchIndex != nil {
 					_ = c.searchIndex.DeleteBean(id)
@@ -299,6 +318,7 @@ func (c *Core) handleWorktreeChanges(wt *worktreeWatcher, changes map[string]fsn
 		_, existed := c.beans[newBean.ID]
 		c.beans[newBean.ID] = newBean
 		c.dirty[newBean.ID] = true // Mark as dirty — came from worktree, not persisted to main
+		c.worktreeLinks[newBean.ID] = wt.worktreePath
 
 		// Update search index
 		if c.searchIndex != nil {

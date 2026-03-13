@@ -3,6 +3,7 @@
   import { beansStore } from '$lib/beans.svelte';
   import { worktreeStore } from '$lib/worktrees.svelte';
   import { agentStatusesStore } from '$lib/agentStatuses.svelte';
+  import { ui } from '$lib/uiState.svelte';
   import { statusColors, typeColors, typeBorders, priorityIndicators } from '$lib/styles';
   import { client } from '$lib/graphqlClient';
   import { gql } from 'urql';
@@ -16,8 +17,22 @@
 
   let { bean, variant = 'list', selected = false, onclick }: Props = $props();
 
-  const hasWorktree = $derived(variant !== 'compact' && worktreeStore.hasWorktree(bean.id));
-  const agentRunning = $derived(hasWorktree && agentStatusesStore.isRunning(bean.id));
+  const linkedWorktreeId = $derived(bean.worktreeId);
+  const hasWorktree = $derived(variant !== 'compact' && !!linkedWorktreeId);
+  const agentRunning = $derived(hasWorktree && linkedWorktreeId != null && agentStatusesStore.isRunning(linkedWorktreeId));
+
+  const worktreeLabel = $derived.by(() => {
+    if (!linkedWorktreeId) return '';
+    const wt = worktreeStore.worktrees.find((w) => w.id === linkedWorktreeId);
+    return wt?.name ?? linkedWorktreeId;
+  });
+
+  function handleWorktreeClick(e: MouseEvent) {
+    e.stopPropagation();
+    if (linkedWorktreeId) {
+      ui.navigateTo(linkedWorktreeId);
+    }
+  }
   const isArchivable = $derived(bean.status === 'completed' || bean.status === 'scrapped');
 
   const ARCHIVE_BEAN = gql`
@@ -56,20 +71,11 @@
       : [
           'rounded-xs p-2',
           variant === 'compact' ? 'border-l-2' : 'border-l-3',
-          hasWorktree
-            ? 'border-l-success'
-            : (typeBorders[bean.type] ?? 'border-l-type-task-border'),
+          typeBorders[bean.type] ?? 'border-l-type-task-border',
           selected ? 'bg-accent/10 ring-1 ring-accent' : 'bg-surface hover:bg-surface-alt'
         ]
   ]}
 >
-  {#if hasWorktree}
-    <div
-      class={['absolute top-0 right-0 size-4 bg-success', agentRunning && 'bean-card-agent-pulse']}
-      style="clip-path: polygon(0 0, 100% 0, 100% 100%)"
-    ></div>
-  {/if}
-
   {#if variant === 'board'}
     <!-- Board: two-row layout -->
     <div class="flex min-w-0 items-start gap-2">
@@ -93,9 +99,21 @@
       {#each bean.tags as tag}
         <span class="badge-sm bg-surface-alt text-text-muted">{tag}</span>
       {/each}
+      {#if hasWorktree}
+        <button
+          class="ml-auto flex cursor-pointer items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] text-success transition-colors hover:bg-success/10"
+          title="Go to workspace: {worktreeLabel}"
+          onclick={handleWorktreeClick}
+        >
+          {#if agentRunning}
+            <span class="loader inline-block !size-2.5"></span>
+          {/if}
+          <span class="icon-[uil--code-branch] size-3"></span>
+        </button>
+      {/if}
       {#if isArchivable}
         <button
-          class="ml-auto cursor-pointer icon-[uil--archive] size-3.5 text-text-faint transition-colors hover:text-text-muted disabled:opacity-50"
+          class={['cursor-pointer icon-[uil--archive] size-3.5 text-text-faint transition-colors hover:text-text-muted disabled:opacity-50', !hasWorktree && 'ml-auto']}
           title="Archive"
           onclick={handleArchive}
           disabled={archiving}
@@ -115,6 +133,18 @@
       {#each bean.tags as tag}
         <span class="shrink-0 badge-sm bg-surface-alt text-text-muted">{tag}</span>
       {/each}
+      {#if hasWorktree}
+        <button
+          class="flex shrink-0 cursor-pointer items-center gap-0.5 rounded-sm px-1 py-0.5 text-success transition-colors hover:bg-success/10"
+          title="Go to workspace: {worktreeLabel}"
+          onclick={handleWorktreeClick}
+        >
+          {#if agentRunning}
+            <span class="loader inline-block !size-2.5"></span>
+          {/if}
+          <span class="icon-[uil--code-branch] size-3"></span>
+        </button>
+      {/if}
       <span
         class={[
           'shrink-0 badge-sm',
@@ -135,18 +165,3 @@
   {/if}
 </div>
 
-<style>
-  .bean-card-agent-pulse {
-    animation: agent-pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes agent-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.3;
-    }
-  }
-</style>

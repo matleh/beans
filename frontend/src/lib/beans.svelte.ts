@@ -21,6 +21,7 @@ export interface Bean {
   order: string;
   parentId: string | null;
   blockingIds: string[];
+  worktreeId: string | null;
 }
 
 /**
@@ -56,6 +57,7 @@ const BEAN_FIELDS = `
   order
   parentId
   blockingIds
+  worktreeId
 `;
 
 const BEAN_CHANGED_SUBSCRIPTION = gql`

@@ -308,8 +308,6 @@ input UpdateBeanInput {
   order: String
   "ETag for optimistic concurrency control (optional)"
   ifMatch: String
-  "Save to this worktree instead of the main repo (workspace-scoped edit)"
-  worktreeId: String
 }
 
 """
@@ -372,6 +370,8 @@ type Bean {
   etag: String!
   "Whether this bean has unsaved runtime changes (not yet persisted to disk)"
   isDirty: Boolean!
+  "ID of the worktree this bean is linked to (null if not linked to any worktree)"
+  worktreeId: String
 
   # Direct link fields
   "Parent bean ID (optional, type-restricted)"

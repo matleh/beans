@@ -230,6 +230,114 @@ Working on this in a worktree.
 		}
 	})
 
+	t.Run("worktree links are set on initial load", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		// Create a worktree with a bean
+		wtDir := t.TempDir()
+		wtBeansDir := filepath.Join(wtDir, BeansDir)
+		os.MkdirAll(wtBeansDir, 0755)
+
+		content := "---\ntitle: Linked Bean\nstatus: todo\ntype: task\n---\n"
+		beanPath := filepath.Join(wtBeansDir, "wt-link-1--linked-bean.md")
+		os.WriteFile(beanPath, []byte(content), 0644)
+
+		// Watch the worktree — initial load should set the link
+		if err := core.WatchWorktreeBeans(wtDir); err != nil {
+			t.Fatalf("WatchWorktreeBeans() error = %v", err)
+		}
+		defer core.UnwatchWorktreeBeans(wtDir)
+
+		// Verify the link was set
+		if got := core.WorktreeForBean("wt-link-1"); got != wtDir {
+			t.Errorf("WorktreeForBean() = %q, want %q", got, wtDir)
+		}
+
+		// Verify BeansForWorktree returns the bean
+		ids := core.BeansForWorktree(wtDir)
+		if len(ids) != 1 || ids[0] != "wt-link-1" {
+			t.Errorf("BeansForWorktree() = %v, want [wt-link-1]", ids)
+		}
+	})
+
+	t.Run("worktree links are cleared on unwatch", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		// Create a worktree with a bean
+		wtDir := t.TempDir()
+		wtBeansDir := filepath.Join(wtDir, BeansDir)
+		os.MkdirAll(wtBeansDir, 0755)
+
+		content := "---\ntitle: Unlink Bean\nstatus: todo\ntype: task\n---\n"
+		os.WriteFile(filepath.Join(wtBeansDir, "wt-unlink-1--unlink-bean.md"), []byte(content), 0644)
+
+		if err := core.WatchWorktreeBeans(wtDir); err != nil {
+			t.Fatalf("WatchWorktreeBeans() error = %v", err)
+		}
+
+		// Verify link exists
+		if got := core.WorktreeForBean("wt-unlink-1"); got == "" {
+			t.Fatal("expected worktree link to be set")
+		}
+
+		// Unwatch — link should be cleared
+		core.UnwatchWorktreeBeans(wtDir)
+
+		if got := core.WorktreeForBean("wt-unlink-1"); got != "" {
+			t.Errorf("WorktreeForBean() after unwatch = %q, want empty", got)
+		}
+	})
+
+	t.Run("update auto-routes to linked worktree", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		// Create a bean in main
+		createTestBean(t, core, "wt-auto-1", "Main Version", "todo")
+
+		// Create a worktree with a modified version
+		wtDir := t.TempDir()
+		wtBeansDir := filepath.Join(wtDir, BeansDir)
+		os.MkdirAll(wtBeansDir, 0755)
+
+		content := "---\ntitle: WT Version\nstatus: in-progress\ntype: task\n---\n"
+		os.WriteFile(filepath.Join(wtBeansDir, "wt-auto-1--wt-version.md"), []byte(content), 0644)
+
+		if err := core.WatchWorktreeBeans(wtDir); err != nil {
+			t.Fatalf("WatchWorktreeBeans() error = %v", err)
+		}
+		defer core.UnwatchWorktreeBeans(wtDir)
+
+		// Update the bean via Core.Update() — should auto-route to worktree
+		b, err := core.Get("wt-auto-1")
+		if err != nil {
+			t.Fatalf("Get() error = %v", err)
+		}
+		b.Title = "Updated via Core"
+		if err := core.Update(b, nil); err != nil {
+			t.Fatalf("Update() error = %v", err)
+		}
+
+		// Bean should still be dirty (written to worktree, not main)
+		if !core.IsDirty("wt-auto-1") {
+			t.Error("bean should be dirty after auto-routed update")
+		}
+
+		// Verify the file was written to the worktree
+		entries, err := os.ReadDir(wtBeansDir)
+		if err != nil {
+			t.Fatalf("ReadDir() error = %v", err)
+		}
+		found := false
+		for _, e := range entries {
+			if filepath.Ext(e.Name()) == ".md" {
+				found = true
+			}
+		}
+		if !found {
+			t.Error("expected updated bean file in worktree .beans/ dir")
+		}
+	})
+
 	t.Run("UnwatchAllWorktrees stops all watchers", func(t *testing.T) {
 		core, _ := setupTestCore(t)
 

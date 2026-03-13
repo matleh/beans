@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Bean } from '$lib/beans.svelte';
-  import { worktreeStore } from '$lib/worktrees.svelte';
   import BeanDetail from './BeanDetail.svelte';
   import AgentChat from './AgentChat.svelte';
 
@@ -13,7 +12,7 @@
 
   let { bean, onSelect, onEdit, onClose }: Props = $props();
 
-  const hasWorktree = $derived(worktreeStore.hasWorktree(bean.id));
+  const hasWorktree = $derived(!!bean.worktreeId);
 
   // Track explicit tab selection per bean; activeTab derives from it
   let tabSelection = $state<{ beanId: string; tab: 'bean' | 'chat' } | null>(null);
@@ -65,8 +64,8 @@
   <div class="min-h-0 flex-1">
     {#if activeTab === 'bean'}
       <BeanDetail {bean} {onSelect} {onEdit} />
-    {:else if activeTab === 'chat' && hasWorktree}
-      <AgentChat beanId={bean.id} />
+    {:else if activeTab === 'chat' && bean.worktreeId}
+      <AgentChat beanId={bean.worktreeId} />
     {/if}
   </div>
 </div>

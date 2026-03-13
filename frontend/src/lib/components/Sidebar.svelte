@@ -1,10 +1,7 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
-  import {
-    worktreeStore,
-    MAIN_WORKSPACE_ID,
-    type WorktreeBean
-  } from '$lib/worktrees.svelte';
+  import { worktreeStore, MAIN_WORKSPACE_ID } from '$lib/worktrees.svelte';
+  import { beansStore, type Bean } from '$lib/beans.svelte';
   import { agentStatusesStore } from '$lib/agentStatuses.svelte';
   import { configStore } from '$lib/config.svelte';
   import { ui } from '$lib/uiState.svelte';
@@ -16,7 +13,12 @@
   interface WorkspaceItem {
     id: string;
     label: string;
-    beans: WorktreeBean[];
+    beans: Bean[];
+  }
+
+  /** Beans linked to a worktree via worktreeId, derived from the bean store. */
+  function beansForWorktree(worktreeId: string): Bean[] {
+    return beansStore.all.filter((b) => b.worktreeId === worktreeId);
   }
 
   const mainWorkspace: WorkspaceItem = { id: MAIN_WORKSPACE_ID, label: 'main', beans: [] };
@@ -26,7 +28,7 @@
     ...worktreeStore.worktrees.map((wt): WorkspaceItem => ({
       id: wt.id,
       label: wt.name ?? wt.branch,
-      beans: wt.beans ?? []
+      beans: beansForWorktree(wt.id)
     }))
   ]);
 

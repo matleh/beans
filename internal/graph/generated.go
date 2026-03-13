@@ -124,6 +124,7 @@ type ComplexityRoot struct {
 		Title              func(childComplexity int) int
 		Type               func(childComplexity int) int
 		UpdatedAt          func(childComplexity int) int
+		WorktreeID         func(childComplexity int) int
 	}
 
 	BeanChangeEvent struct {
@@ -210,6 +211,7 @@ type ComplexityRoot struct {
 
 type BeanResolver interface {
 	IsDirty(ctx context.Context, obj *bean.Bean) (bool, error)
+	WorktreeID(ctx context.Context, obj *bean.Bean) (*string, error)
 	ParentID(ctx context.Context, obj *bean.Bean) (*string, error)
 	BlockingIds(ctx context.Context, obj *bean.Bean) ([]string, error)
 	BlockedByIds(ctx context.Context, obj *bean.Bean) ([]string, error)
@@ -610,6 +612,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Bean.UpdatedAt(childComplexity), true
+	case "Bean.worktreeId":
+		if e.complexity.Bean.WorktreeID == nil {
+			break
+		}
+
+		return e.complexity.Bean.WorktreeID(childComplexity), true
 
 	case "BeanChangeEvent.bean":
 		if e.complexity.BeanChangeEvent.Bean == nil {
@@ -3031,6 +3039,35 @@ func (ec *executionContext) fieldContext_Bean_isDirty(_ context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Bean_worktreeId(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Bean_worktreeId,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Bean().WorktreeID(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Bean_worktreeId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Bean",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Bean_parentId(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3171,6 +3208,8 @@ func (ec *executionContext) fieldContext_Bean_blockedBy(ctx context.Context, fie
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -3260,6 +3299,8 @@ func (ec *executionContext) fieldContext_Bean_blocking(ctx context.Context, fiel
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -3348,6 +3389,8 @@ func (ec *executionContext) fieldContext_Bean_parent(_ context.Context, field gr
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -3426,6 +3469,8 @@ func (ec *executionContext) fieldContext_Bean_children(ctx context.Context, fiel
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -3601,6 +3646,8 @@ func (ec *executionContext) fieldContext_BeanChangeEvent_bean(_ context.Context,
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -3678,6 +3725,8 @@ func (ec *executionContext) fieldContext_BeanChangeEvent_beans(_ context.Context
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -3930,6 +3979,8 @@ func (ec *executionContext) fieldContext_Mutation_createBean(ctx context.Context
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -4019,6 +4070,8 @@ func (ec *executionContext) fieldContext_Mutation_updateBean(ctx context.Context
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -4149,6 +4202,8 @@ func (ec *executionContext) fieldContext_Mutation_setParent(ctx context.Context,
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -4238,6 +4293,8 @@ func (ec *executionContext) fieldContext_Mutation_addBlocking(ctx context.Contex
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -4327,6 +4384,8 @@ func (ec *executionContext) fieldContext_Mutation_removeBlocking(ctx context.Con
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -4416,6 +4475,8 @@ func (ec *executionContext) fieldContext_Mutation_addBlockedBy(ctx context.Conte
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -4505,6 +4566,8 @@ func (ec *executionContext) fieldContext_Mutation_removeBlockedBy(ctx context.Co
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -5183,6 +5246,8 @@ func (ec *executionContext) fieldContext_Query_bean(ctx context.Context, field g
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -5272,6 +5337,8 @@ func (ec *executionContext) fieldContext_Query_beans(ctx context.Context, field 
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -6322,6 +6389,8 @@ func (ec *executionContext) fieldContext_Worktree_beans(_ context.Context, field
 				return ec.fieldContext_Bean_etag(ctx, field)
 			case "isDirty":
 				return ec.fieldContext_Bean_isDirty(ctx, field)
+			case "worktreeId":
+				return ec.fieldContext_Bean_worktreeId(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -8166,7 +8235,7 @@ func (ec *executionContext) unmarshalInputUpdateBeanInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "status", "type", "priority", "tags", "addTags", "removeTags", "body", "bodyMod", "parent", "addBlocking", "removeBlocking", "addBlockedBy", "removeBlockedBy", "order", "ifMatch", "worktreeId"}
+	fieldsInOrder := [...]string{"title", "status", "type", "priority", "tags", "addTags", "removeTags", "body", "bodyMod", "parent", "addBlocking", "removeBlocking", "addBlockedBy", "removeBlockedBy", "order", "ifMatch"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8285,13 +8354,6 @@ func (ec *executionContext) unmarshalInputUpdateBeanInput(ctx context.Context, o
 				return it, err
 			}
 			it.IfMatch = data
-		case "worktreeId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("worktreeId"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.WorktreeID = data
 		}
 	}
 
@@ -8752,6 +8814,39 @@ func (ec *executionContext) _Bean(ctx context.Context, sel ast.SelectionSet, obj
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "worktreeId":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Bean_worktreeId(ctx, field, obj)
 				return res
 			}
 

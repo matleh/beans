@@ -48,9 +48,10 @@ type Core struct {
 	config *config.Config // project configuration
 
 	// In-memory state
-	mu    sync.RWMutex
-	beans map[string]*bean.Bean // ID -> Bean
-	dirty map[string]bool       // IDs of beans modified in runtime but not yet persisted to disk
+	mu             sync.RWMutex
+	beans          map[string]*bean.Bean // ID -> Bean
+	dirty          map[string]bool       // IDs of beans modified in runtime but not yet persisted to disk
+	worktreeLinks  map[string]string     // bean ID -> worktree path (beans linked to a worktree)
 
 	// Search index (optional, lazy-initialized)
 	searchIndex *search.Index
@@ -76,8 +77,9 @@ func New(root string, cfg *config.Config) *Core {
 	return &Core{
 		root:        root,
 		config:      cfg,
-		beans:       make(map[string]*bean.Bean),
-		dirty:       make(map[string]bool),
+		beans:         make(map[string]*bean.Bean),
+		dirty:         make(map[string]bool),
+		worktreeLinks: make(map[string]string),
 		subscribers: make(map[uint64]*subscription),
 		warnWriter:  os.Stderr,
 	}
@@ -403,6 +405,27 @@ func (c *Core) HasDirty() bool {
 	return len(c.dirty) > 0
 }
 
+// WorktreeForBean returns the worktree path linked to the given bean ID,
+// or empty string if the bean is not linked to any worktree.
+func (c *Core) WorktreeForBean(id string) string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.worktreeLinks[id]
+}
+
+// BeansForWorktree returns the IDs of all beans linked to the given worktree path.
+func (c *Core) BeansForWorktree(worktreePath string) []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var ids []string
+	for id, wt := range c.worktreeLinks {
+		if wt == worktreePath {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
 // SaveDirty persists all dirty beans to disk and clears their dirty flags.
 // Returns the number of beans saved.
 func (c *Core) SaveDirty() (int, error) {
@@ -564,9 +587,15 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string, opts ...UpdateOption) error
 	now := time.Now().UTC().Truncate(time.Second)
 	b.UpdatedAt = &now
 
-	if o.worktreePath != "" {
+	// Auto-route to linked worktree if no explicit path given
+	wtPath := o.worktreePath
+	if wtPath == "" {
+		wtPath = c.worktreeLinks[b.ID]
+	}
+
+	if wtPath != "" {
 		// Write to the worktree's .beans/ dir; keep dirty in main
-		if err := c.saveToWorktree(b, o.worktreePath); err != nil {
+		if err := c.saveToWorktree(b, wtPath); err != nil {
 			return err
 		}
 		c.dirty[b.ID] = true

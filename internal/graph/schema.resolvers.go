@@ -24,6 +24,17 @@ func (r *beanResolver) IsDirty(ctx context.Context, obj *bean.Bean) (bool, error
 	return r.Core.IsDirty(obj.ID), nil
 }
 
+// WorktreeID is the resolver for the worktreeId field.
+func (r *beanResolver) WorktreeID(ctx context.Context, obj *bean.Bean) (*string, error) {
+	wtPath := r.Core.WorktreeForBean(obj.ID)
+	if wtPath == "" {
+		return nil, nil
+	}
+	// Extract worktree ID from the path (last path component)
+	id := filepath.Base(wtPath)
+	return &id, nil
+}
+
 // ParentID is the resolver for the parentId field.
 func (r *beanResolver) ParentID(ctx context.Context, obj *bean.Bean) (*string, error) {
 	if obj.Parent == "" {
@@ -340,17 +351,9 @@ func (r *mutationResolver) UpdateBean(ctx context.Context, id string, input mode
 		r.removeBlockedByRelationships(b, input.RemoveBlockedBy)
 	}
 
-	// Resolve worktree path if workspace-scoped edit
-	var updateOpts []beancore.UpdateOption
-	if input.WorktreeID != nil && *input.WorktreeID != "" && r.WorktreeMgr != nil {
-		wtPath := r.WorktreeMgr.WorktreePath(*input.WorktreeID)
-		if wtPath != "" {
-			updateOpts = append(updateOpts, beancore.WithWorktreePath(wtPath))
-		}
-	}
-
-	// ETag validation now happens inside Update() under write lock
-	if err := r.Core.Update(b, input.IfMatch, updateOpts...); err != nil {
+	// ETag validation now happens inside Update() under write lock.
+	// If the bean is linked to a worktree, Core auto-routes the write there.
+	if err := r.Core.Update(b, input.IfMatch); err != nil {
 		return nil, err
 	}
 
