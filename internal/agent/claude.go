@@ -219,6 +219,7 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader, workDir string) {
 	var toolInvIdx int = -1 // index into session.ToolInvocations
 	var pendingToolPersist bool // true when current tool msg hasn't been persisted yet
 	var deferredAskUser bool // true when AskUserQuestion detected, waiting for input to complete
+	var blocked bool         // true after handleBlockingTool — suppresses ensureRunning
 
 	// Write tool diff tracking: capture old file content before the write happens.
 	var writeOldContent string
@@ -279,8 +280,12 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader, workDir string) {
 	// ensureRunning transitions the session back to StatusRunning if it's
 	// currently Idle. This handles multi-turn processes where Claude Code
 	// starts a new turn (e.g. after a Stop hook) without us spawning a new
-	// process.
+	// process. Skipped after a blocking tool has been handled — the process
+	// is winding down and shouldn't flip back to RUNNING.
 	ensureRunning := func() {
+		if blocked {
+			return
+		}
 		m.mu.Lock()
 		s, ok := m.sessions[beanID]
 		if ok && s.Status == StatusIdle {
@@ -318,6 +323,7 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader, workDir string) {
 			}
 			m.handleBlockingTool(beanID, interaction)
 			deferredAskUser = false
+			blocked = true
 		}
 
 		switch ev.Type {
@@ -375,6 +381,7 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader, workDir string) {
 					m.autoApproveModeSwitch(beanID, interaction, workDir)
 				} else {
 					m.handleBlockingTool(beanID, interaction)
+					blocked = true
 				}
 			}
 

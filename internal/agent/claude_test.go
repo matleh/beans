@@ -223,3 +223,89 @@ func TestReadOutputMultipleTools(t *testing.T) {
 		}
 	}
 }
+
+// TestReadOutputAskUserQuestionStaysIdle verifies that after AskUserQuestion is
+// handled, the session stays IDLE even if more events arrive before the process exits.
+func TestReadOutputAskUserQuestionStaysIdle(t *testing.T) {
+	pr, pw := io.Pipe()
+
+	m := &Manager{
+		sessions:    make(map[string]*Session),
+		processes:   make(map[string]*runningProcess),
+		subscribers: make(map[string][]chan struct{}),
+	}
+
+	session := &Session{
+		ID:           "bean-ask",
+		AgentType:    "claude",
+		Status:       StatusRunning,
+		Messages:     []Message{{Role: RoleUser, Content: "hello"}},
+		streamingIdx: -1,
+	}
+	m.sessions["bean-ask"] = session
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		m.readOutput("bean-ask", pr, "")
+	}()
+
+	writeLine := func(line string) {
+		_, _ = pw.Write([]byte(line + "\n"))
+	}
+
+	awaitStatus := func(want SessionStatus) SessionStatus {
+		deadline := time.After(500 * time.Millisecond)
+		for {
+			m.mu.RLock()
+			s := m.sessions["bean-ask"].Status
+			m.mu.RUnlock()
+			if s == want {
+				return s
+			}
+			select {
+			case <-deadline:
+				return s
+			case <-time.After(time.Millisecond):
+			}
+		}
+	}
+
+	// Agent starts working, then invokes AskUserQuestion
+	writeLine(`{"type":"content_block_start","content_block":{"type":"text","text":""}}`)
+	writeLine(`{"type":"content_block_delta","delta":{"type":"text_delta","text":"Let me ask"}}`)
+	writeLine(`{"type":"content_block_start","content_block":{"type":"tool_use","name":"AskUserQuestion"}}`)
+	writeLine(`{"type":"content_block_delta","delta":{"type":"input_json_delta","partial_json":"{\"question\":\"Pick one\",\"options\":[{\"value\":\"a\",\"label\":\"Option A\"}]}"}}`)
+	// Next non-delta event triggers deferred AskUserQuestion handling
+	writeLine(`{"type":"content_block_start","content_block":{"type":"text","text":""}}`)
+
+	status := awaitStatus(StatusIdle)
+	if status != StatusIdle {
+		t.Fatalf("after AskUserQuestion, expected Idle, got %s", status)
+	}
+
+	// Verify pending interaction was set
+	m.mu.RLock()
+	pending := m.sessions["bean-ask"].PendingInteraction
+	m.mu.RUnlock()
+	if pending == nil || pending.Type != InteractionAskUser {
+		t.Fatalf("expected AskUser pending interaction, got %v", pending)
+	}
+
+	// More events arrive (process hasn't exited yet) — status must NOT flip back to Running
+	writeLine(`{"type":"content_block_delta","delta":{"type":"text_delta","text":"trailing"}}`)
+	writeLine(`{"type":"result","session_id":"sess-1"}`)
+
+	// Give time for events to be processed
+	time.Sleep(50 * time.Millisecond)
+
+	m.mu.RLock()
+	finalStatus := m.sessions["bean-ask"].Status
+	m.mu.RUnlock()
+	if finalStatus != StatusIdle {
+		t.Errorf("after trailing events, expected Idle, got %s", finalStatus)
+	}
+
+	pw.Close()
+	<-done
+}
