@@ -86,6 +86,7 @@
 {#if ui.showForm}
   <BeanForm
     bean={ui.editingBean}
+    worktreeId={!ui.isPlanning && ui.activeView !== MAIN_WORKSPACE_ID ? ui.activeView : null}
     onClose={() => ui.closeForm()}
     onSaved={(bean) => ui.selectBean(bean)}
   />

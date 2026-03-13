@@ -6,11 +6,12 @@
 
   interface Props {
     bean?: Bean | null;
+    worktreeId?: string | null;
     onClose: () => void;
     onSaved?: (bean: Bean) => void;
   }
 
-  let { bean = null, onClose, onSaved }: Props = $props();
+  let { bean = null, worktreeId = null, onClose, onSaved }: Props = $props();
 
   const isEdit = $derived(!!bean);
 
@@ -119,6 +120,10 @@
       tags: parseTags(tags),
       parent: parentId || null
     };
+
+    if (worktreeId) {
+      input.worktreeId = worktreeId;
+    }
 
     let result;
     if (isEdit && bean) {

@@ -340,8 +340,17 @@ func (r *mutationResolver) UpdateBean(ctx context.Context, id string, input mode
 		r.removeBlockedByRelationships(b, input.RemoveBlockedBy)
 	}
 
+	// Resolve worktree path if workspace-scoped edit
+	var updateOpts []beancore.UpdateOption
+	if input.WorktreeID != nil && *input.WorktreeID != "" && r.WorktreeMgr != nil {
+		wtPath := r.WorktreeMgr.WorktreePath(*input.WorktreeID)
+		if wtPath != "" {
+			updateOpts = append(updateOpts, beancore.WithWorktreePath(wtPath))
+		}
+	}
+
 	// ETag validation now happens inside Update() under write lock
-	if err := r.Core.Update(b, input.IfMatch); err != nil {
+	if err := r.Core.Update(b, input.IfMatch, updateOpts...); err != nil {
 		return nil, err
 	}
 

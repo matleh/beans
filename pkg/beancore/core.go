@@ -353,7 +353,8 @@ func (c *Core) NormalizeID(id string) (string, bool) {
 type UpdateOption func(*updateOptions)
 
 type updateOptions struct {
-	persist bool // whether to write to disk (default: true)
+	persist      bool   // whether to write to disk (default: true)
+	worktreePath string // if set, write to this worktree's .beans/ dir instead of main
 }
 
 func defaultUpdateOptions() updateOptions {
@@ -365,6 +366,14 @@ func defaultUpdateOptions() updateOptions {
 func WithPersist(persist bool) UpdateOption {
 	return func(o *updateOptions) {
 		o.persist = persist
+	}
+}
+
+// WithWorktreePath writes the bean to a worktree's .beans/ directory instead of main.
+// The bean is kept dirty in runtime (not persisted to main).
+func WithWorktreePath(path string) UpdateOption {
+	return func(o *updateOptions) {
+		o.worktreePath = path
 	}
 }
 
@@ -555,7 +564,13 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string, opts ...UpdateOption) error
 	now := time.Now().UTC().Truncate(time.Second)
 	b.UpdatedAt = &now
 
-	if o.persist {
+	if o.worktreePath != "" {
+		// Write to the worktree's .beans/ dir; keep dirty in main
+		if err := c.saveToWorktree(b, o.worktreePath); err != nil {
+			return err
+		}
+		c.dirty[b.ID] = true
+	} else if o.persist {
 		// Write to disk
 		if err := c.saveToDisk(b); err != nil {
 			return err
@@ -606,6 +621,30 @@ func (c *Core) saveToDisk(b *bean.Bean) error {
 
 	if err := os.WriteFile(path, content, 0644); err != nil {
 		return fmt.Errorf("writing file: %w", err)
+	}
+
+	return nil
+}
+
+// saveToWorktree writes a bean to a worktree's .beans/ directory.
+func (c *Core) saveToWorktree(b *bean.Bean, worktreePath string) error {
+	beansDir := filepath.Join(worktreePath, BeansDir)
+
+	// Ensure the .beans/ directory exists in the worktree
+	if err := os.MkdirAll(beansDir, 0755); err != nil {
+		return fmt.Errorf("creating worktree beans dir: %w", err)
+	}
+
+	filename := bean.BuildFilename(b.ID, b.Slug)
+	path := filepath.Join(beansDir, filename)
+
+	content, err := b.Render()
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(path, content, 0644); err != nil {
+		return fmt.Errorf("writing worktree bean: %w", err)
 	}
 
 	return nil

@@ -298,6 +298,8 @@ type UpdateBeanInput struct {
 	Order *string `json:"order,omitempty"`
 	// ETag for optimistic concurrency control (optional)
 	IfMatch *string `json:"ifMatch,omitempty"`
+	// Save to this worktree instead of the main repo (workspace-scoped edit)
+	WorktreeID *string `json:"worktreeId,omitempty"`
 }
 
 // A git worktree, either associated with a bean or standalone

@@ -227,7 +227,7 @@ func (m *Manager) Create(name string) (*Worktree, error) {
 	defer m.mu.Unlock()
 
 	branch := branchPrefix + name
-	worktreePath := m.worktreePath(id)
+	worktreePath := m.WorktreePath(id)
 
 	// Check if the worktree path already exists
 	if _, err := os.Stat(worktreePath); err == nil {
@@ -348,8 +348,8 @@ func (m *Manager) findWorktreePathByID(id string) (string, error) {
 	return "", fmt.Errorf("no worktree with id %s", id)
 }
 
-// worktreePath returns the filesystem path for a worktree with the given ID.
+// WorktreePath returns the filesystem path for a worktree with the given ID.
 // Worktrees are stored inside the .beans/.worktrees/ directory.
-func (m *Manager) worktreePath(id string) string {
+func (m *Manager) WorktreePath(id string) string {
 	return filepath.Join(m.beansDir, ".worktrees", id)
 }

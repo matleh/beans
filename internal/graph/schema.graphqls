@@ -308,6 +308,8 @@ input UpdateBeanInput {
   order: String
   "ETag for optimistic concurrency control (optional)"
   ifMatch: String
+  "Save to this worktree instead of the main repo (workspace-scoped edit)"
+  worktreeId: String
 }
 
 """
