@@ -130,7 +130,7 @@
             <div class="min-w-0 flex-1">
               <span class="block truncate">{item.label}</span>
               {#if item.description}
-                <span class="block truncate text-xs font-normal text-text-faint">{item.description}</span>
+                <span class="block text-xs font-normal text-text-faint">{item.description}</span>
               {/if}
             </div>
             <div class="relative ml-auto h-4 w-4 shrink-0">
