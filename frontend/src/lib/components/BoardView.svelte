@@ -146,10 +146,11 @@
   }
 </script>
 
-<div class="flex min-h-0 flex-1 overflow-x-auto bg-surface-alt px-4 pt-4">
+<div class="flex min-h-0 flex-1 justify-center overflow-x-auto bg-surface-alt px-4 pt-4">
+  <div class="flex w-full max-w-[1280px] min-w-0">
   {#each columns as col (col.status)}
     {@const beans = beansForStatus(col.status)}
-    <div class="flex w-75 min-w-65 shrink-0 flex-col" data-status={col.status}>
+    <div class="flex min-w-50 flex-1 flex-col" data-status={col.status}>
       <!-- Column header -->
       <div class="mb-3 flex items-center gap-2 px-1">
         <span class={['badge', col.color]}
@@ -242,6 +243,7 @@
       </div>
     </div>
   {/each}
+  </div>
 </div>
 
 {#if confirmingArchiveAll}
