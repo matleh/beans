@@ -32,7 +32,7 @@
   const systemStatus = $derived(store.session?.systemStatus ?? null);
   const planMode = $derived(store.session?.planMode ?? false);
   const agentMode = $derived<'plan' | 'act'>(planMode ? 'plan' : 'act');
-  const activityLabel = $derived(systemStatus ? `${systemStatus}...` : 'thinking...');
+  const activityLabel = $derived(systemStatus ? `${systemStatus}...` : 'Thinking...');
   const pendingInteraction = $derived(store.session?.pendingInteraction ?? null);
   const subagentActivities = $derived(store.session?.subagentActivities ?? []);
 
