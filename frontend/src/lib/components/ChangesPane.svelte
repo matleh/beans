@@ -22,17 +22,6 @@
   const isWorktree = $derived(worktreeId != null && worktreeId !== MAIN_WORKSPACE_ID);
   const branchStatus = $derived(changesStore.branchStatus);
 
-  const changeSummary = $derived.by(() => {
-    const counts = { added: 0, modified: 0, deleted: 0, renamed: 0 };
-    for (const c of changesStore.allChanges) {
-      if (c.status === 'added' || c.status === 'untracked') counts.added++;
-      else if (c.status === 'deleted') counts.deleted++;
-      else if (c.status === 'renamed') counts.renamed++;
-      else counts.modified++;
-    }
-    return counts;
-  });
-
   let rebaseRequested = $state(false);
 
   async function requestRebase() {
@@ -378,14 +367,14 @@
 {/snippet}
 
 {#snippet branchStatusBar()}
-  <div class="flex flex-col gap-1.5 border-b border-border px-3 pt-3 pb-2 text-xs">
+  <div class="flex flex-col gap-2 border-b border-border px-3 pt-3 pb-2.5">
     {#if branchStatus.commitsBehind > 0}
       <div class="flex items-center justify-between gap-2">
-        <span class={['flex items-center gap-1.5', branchStatus.hasConflicts ? 'text-danger' : 'text-warning']}>
+        <span class={['flex items-center gap-1.5', branchStatus.hasConflicts ? 'text-danger' : 'text-text']}>
           {#if branchStatus.hasConflicts}
-            <span class="iconify lucide--alert-triangle size-3.5 shrink-0"></span>
+            <span class="iconify lucide--alert-triangle size-4 shrink-0"></span>
           {:else}
-            <span class="iconify lucide--git-branch size-3.5 shrink-0"></span>
+            <span class="iconify lucide--git-branch size-4 shrink-0"></span>
           {/if}
           {branchStatus.commitsBehind} commit{branchStatus.commitsBehind === 1 ? '' : 's'} behind
           {#if branchStatus.hasConflicts}
@@ -393,7 +382,7 @@
           {/if}
         </span>
         <button
-          class="btn-tab-sm cursor-pointer whitespace-nowrap"
+          class="btn-toggle btn-toggle-inactive cursor-pointer"
           onclick={requestRebase}
           disabled={rebaseRequested}
           title="Ask the agent to rebase this branch against main"
@@ -407,27 +396,11 @@
       </div>
     {/if}
 
-    {#if changesStore.allChanges.length > 0}
-      <div class="flex items-center gap-2 text-text-muted">
-        {#if changeSummary.added > 0}
-          <span class="text-success">{changeSummary.added} added</span>
-        {/if}
-        {#if changeSummary.modified > 0}
-          <span class="text-warning">{changeSummary.modified} modified</span>
-        {/if}
-        {#if changeSummary.deleted > 0}
-          <span class="text-danger">{changeSummary.deleted} deleted</span>
-        {/if}
-        {#if changeSummary.renamed > 0}
-          <span class="text-accent">{changeSummary.renamed} renamed</span>
-        {/if}
-      </div>
-    {/if}
   </div>
 {/snippet}
 
 <div class="flex h-full flex-col bg-surface">
-  {#if isWorktree && (branchStatus.commitsBehind > 0 || changesStore.allChanges.length > 0)}
+  {#if isWorktree && branchStatus.commitsBehind > 0}
     {@render branchStatusBar()}
   {/if}
   {@render tabSwitcher()}
