@@ -136,8 +136,9 @@
       <AgentActions beanId={worktreeId} {agentBusy} />
       {#if isWorktree && hasNoChanges}
         <button
-          class="btn-toggle ml-2 cursor-pointer border-danger/30 bg-danger/10 text-danger hover:bg-danger/20"
-          title="Destroy this worktree"
+          class={["btn-toggle ml-2 cursor-pointer border-danger/30 bg-danger/10 text-danger", agentBusy ? "opacity-50" : "hover:bg-danger/20"]}
+          title={agentBusy ? "Cannot destroy while agent is running" : "Destroy this worktree"}
+          disabled={agentBusy}
           onclick={() => (confirmingDestroy = true)}
         >
           <span class="icon-[uil--trash-alt] size-4"></span>
