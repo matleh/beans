@@ -66,6 +66,7 @@ Mutations that affect UI responsiveness (e.g., `worktreeStore.removeWorktree`, `
 
 ## Styling
 
+- **NEVER use small font sizes.** Do not apply `text-xs`, `text-sm`, or any size-reducing classes to body text, prose, tables, code blocks, or any content the user needs to read. The base font size is correct — leave it alone. If you catch yourself reaching for a smaller font size, stop and don't.
 - Use **Tailwind CSS v4** utility classes. **Never write raw CSS properties** — always use Tailwind utilities, either inline or via `@apply` in custom classes.
 - Define custom utility classes with `@apply` in `layout.css` when styling dynamically rendered HTML (e.g. markdown output) or when a pattern repeats across components.
 - When writing `@apply` classes or `<style>` blocks, compose exclusively from Tailwind utilities — no raw CSS properties.
