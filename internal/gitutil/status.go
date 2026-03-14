@@ -1,6 +1,7 @@
 package gitutil
 
 import (
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -316,6 +317,41 @@ func FileDiff(dir, filePath string, staged bool) (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+// DiscardFileChange discards a change to a single file.
+// If staged is true, the file is unstaged first. Untracked files are removed;
+// tracked files are restored to their committed state.
+func DiscardFileChange(dir, filePath string, staged bool) error {
+	if staged {
+		// Unstage the file first
+		cmd := exec.Command("git", "-C", dir, "reset", "HEAD", "--", filePath)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("unstage file: %s", strings.TrimSpace(string(out)))
+		}
+	}
+
+	// Check if the file is untracked
+	cmd := exec.Command("git", "-C", dir, "ls-files", "--others", "--exclude-standard", "--", filePath)
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("check untracked status: %w", err)
+	}
+	if strings.TrimSpace(string(out)) != "" {
+		// Untracked file — remove it
+		cmd = exec.Command("git", "-C", dir, "clean", "-f", "--", filePath)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("clean untracked file: %s", strings.TrimSpace(string(out)))
+		}
+		return nil
+	}
+
+	// Tracked file — restore working tree copy
+	cmd = exec.Command("git", "-C", dir, "checkout", "--", filePath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("restore file: %s", strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 // untrackedFiles returns untracked files via git ls-files.

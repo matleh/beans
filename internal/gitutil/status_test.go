@@ -574,3 +574,114 @@ func TestHasConflicts_WithConflict(t *testing.T) {
 		t.Error("expected conflicts")
 	}
 }
+
+func TestDiscardFileChange_TrackedModified(t *testing.T) {
+	dir := initStatusTestRepo(t)
+
+	// Modify tracked file
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("modified\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify it shows as changed
+	changes, _ := FileChanges(dir)
+	if len(changes) != 1 {
+		t.Fatalf("expected 1 change, got %d", len(changes))
+	}
+
+	// Discard
+	if err := DiscardFileChange(dir, "README.md", false); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify no more changes
+	changes, _ = FileChanges(dir)
+	if len(changes) != 0 {
+		t.Fatalf("expected 0 changes after discard, got %d", len(changes))
+	}
+
+	// Verify original content restored
+	data, _ := os.ReadFile(filepath.Join(dir, "README.md"))
+	if string(data) != "# Test\n" {
+		t.Errorf("expected original content, got %q", string(data))
+	}
+}
+
+func TestDiscardFileChange_Untracked(t *testing.T) {
+	dir := initStatusTestRepo(t)
+
+	// Create untracked file
+	newFile := filepath.Join(dir, "untracked.txt")
+	if err := os.WriteFile(newFile, []byte("data\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify it exists
+	if _, err := os.Stat(newFile); err != nil {
+		t.Fatal("expected file to exist")
+	}
+
+	// Discard
+	if err := DiscardFileChange(dir, "untracked.txt", false); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify file removed
+	if _, err := os.Stat(newFile); !os.IsNotExist(err) {
+		t.Error("expected file to be removed after discard")
+	}
+}
+
+func TestDiscardFileChange_Staged(t *testing.T) {
+	dir := initStatusTestRepo(t)
+
+	// Modify and stage a tracked file
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("staged change\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	gitRun(t, dir, "add", "README.md")
+
+	// Verify it shows as staged
+	changes, _ := FileChanges(dir)
+	if len(changes) != 1 || !changes[0].Staged {
+		t.Fatalf("expected 1 staged change, got %+v", changes)
+	}
+
+	// Discard staged change
+	if err := DiscardFileChange(dir, "README.md", true); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify no more changes
+	changes, _ = FileChanges(dir)
+	if len(changes) != 0 {
+		t.Fatalf("expected 0 changes after discard, got %d: %+v", len(changes), changes)
+	}
+
+	// Verify original content restored
+	data, _ := os.ReadFile(filepath.Join(dir, "README.md"))
+	if string(data) != "# Test\n" {
+		t.Errorf("expected original content, got %q", string(data))
+	}
+}
+
+func TestDiscardFileChange_StagedNewFile(t *testing.T) {
+	dir := initStatusTestRepo(t)
+
+	// Create and stage a new file
+	newFile := filepath.Join(dir, "new.txt")
+	if err := os.WriteFile(newFile, []byte("hello\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	gitRun(t, dir, "add", "new.txt")
+
+	// Discard staged new file
+	if err := DiscardFileChange(dir, "new.txt", true); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify file removed (unstaged new file becomes untracked, then cleaned)
+	if _, err := os.Stat(newFile); !os.IsNotExist(err) {
+		t.Error("expected file to be removed after discard")
+	}
+}

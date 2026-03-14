@@ -755,6 +755,35 @@ func (r *mutationResolver) ExecuteAgentAction(ctx context.Context, beanID string
 	return true, nil
 }
 
+// DiscardFileChange is the resolver for the discardFileChange field.
+func (r *mutationResolver) DiscardFileChange(ctx context.Context, filePath string, staged bool, path *string) (bool, error) {
+	dir := r.ProjectRoot
+	if path != nil && *path != "" {
+		if r.WorktreeMgr != nil {
+			wts, err := r.WorktreeMgr.List()
+			if err != nil {
+				return false, err
+			}
+			valid := false
+			for _, wt := range wts {
+				if wt.Path == *path {
+					valid = true
+					break
+				}
+			}
+			if !valid {
+				return false, fmt.Errorf("unknown worktree path: %s", *path)
+			}
+		}
+		dir = *path
+	}
+
+	if err := gitutil.DiscardFileChange(dir, filePath, staged); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // Bean is the resolver for the bean field.
 func (r *queryResolver) Bean(ctx context.Context, id string) (*bean.Bean, error) {
 	b, err := r.Core.Get(id)

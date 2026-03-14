@@ -265,6 +265,14 @@ type Mutation {
   the corresponding prompt into the agent conversation.
   """
   executeAgentAction(beanId: ID!, actionId: ID!): Boolean!
+
+  """
+  Discard a file change (restore tracked file or remove untracked file).
+  If staged is true, the file is unstaged first.
+  The filePath is relative to the repo/worktree root.
+  If path is null, operates on the project root.
+  """
+  discardFileChange(filePath: String!, staged: Boolean!, path: String): Boolean!
 }
 
 """

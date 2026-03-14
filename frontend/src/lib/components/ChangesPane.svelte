@@ -6,10 +6,17 @@
   import { MAIN_WORKSPACE_ID } from '$lib/worktrees.svelte';
 
   import SplitPane from '$lib/components/SplitPane.svelte';
+  import ConfirmModal from './ConfirmModal.svelte';
 
   const SEND_AGENT_MESSAGE = gql`
     mutation SendAgentMessage($beanId: ID!, $message: String!) {
       sendAgentMessage(beanId: $beanId, message: $message)
+    }
+  `;
+
+  const DISCARD_FILE_CHANGE = gql`
+    mutation DiscardFileChange($filePath: String!, $staged: Boolean!, $path: String) {
+      discardFileChange(filePath: $filePath, staged: $staged, path: $path)
     }
   `;
 
@@ -137,7 +144,18 @@
   const displayChanges = $derived(activeTab === 'all' ? changesStore.allChanges : changesStore.changes);
   const totalCount = $derived(displayChanges.length);
 
+  let confirmingDiscard = $state<{ path: string; staged: boolean } | null>(null);
 
+  async function discardChange(filePath: string, staged: boolean) {
+    confirmingDiscard = null;
+    await client.mutation(DISCARD_FILE_CHANGE, { filePath, staged, path: path ?? null }).toPromise();
+    // Clear selection if the discarded file was selected
+    if (selectedFile?.path === filePath) {
+      selectedFile = null;
+      diffContent = '';
+    }
+    changesStore.fetch(path);
+  }
 
   function statusColor(status: string): string {
     switch (status) {
@@ -236,12 +254,15 @@
 </script>
 
 {#snippet fileRow(change: FileChange)}
-  <button
+  <div
     class={[
-      'flex w-full cursor-pointer items-center gap-1.5 px-3 py-0.5 text-left hover:bg-surface-alt',
+      'group flex w-full cursor-pointer items-center gap-1.5 px-3 py-0.5 text-left hover:bg-surface-alt',
       isFileSelected(change) && 'bg-surface-alt'
     ]}
+    role="button"
+    tabindex="0"
     onclick={() => selectFile(change)}
+    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectFile(change); } }}
   >
     <span class={['w-3 shrink-0 text-center font-mono font-bold', statusColor(change.status)]}>
       {statusLabel(change.status)}
@@ -255,7 +276,14 @@
         {#if change.deletions > 0}<span class={[change.additions > 0 && 'ml-1', 'text-danger']}>-{change.deletions}</span>{/if}
       </span>
     {/if}
-  </button>
+    <button
+      class="shrink-0 cursor-pointer rounded px-1 text-text-faint opacity-0 transition-opacity hover:text-text group-hover:opacity-100"
+      title="Discard change"
+      onclick={(e) => { e.stopPropagation(); confirmingDiscard = { path: change.path, staged: change.staged }; }}
+    >
+      <span class="icon-[eva--undo-fill] size-3.5"></span>
+    </button>
+  </div>
 {/snippet}
 
 {#snippet fileList()}
@@ -417,5 +445,15 @@
   {:else}
     {@render fileList()}
   {/if}
-
 </div>
+
+{#if confirmingDiscard}
+  <ConfirmModal
+    title="Discard Change"
+    message={`Are you sure you want to discard changes to "${confirmingDiscard.path}"? This cannot be undone.`}
+    confirmLabel="Discard"
+    danger
+    onConfirm={() => discardChange(confirmingDiscard!.path, confirmingDiscard!.staged)}
+    onCancel={() => { confirmingDiscard = null; }}
+  />
+{/if}

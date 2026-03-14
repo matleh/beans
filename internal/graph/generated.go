@@ -157,6 +157,7 @@ type ComplexityRoot struct {
 		CreateBean                 func(childComplexity int, input model.CreateBeanInput) int
 		CreateWorktree             func(childComplexity int, name string) int
 		DeleteBean                 func(childComplexity int, id string) int
+		DiscardFileChange          func(childComplexity int, filePath string, staged bool, path *string) int
 		ExecuteAgentAction         func(childComplexity int, beanID string, actionID string) int
 		RemoveBlockedBy            func(childComplexity int, id string, targetID string, ifMatch *string) int
 		RemoveBlocking             func(childComplexity int, id string, targetID string, ifMatch *string) int
@@ -262,6 +263,7 @@ type MutationResolver interface {
 	SaveDirtyBeans(ctx context.Context) (int, error)
 	SaveBean(ctx context.Context, id string) (bool, error)
 	ExecuteAgentAction(ctx context.Context, beanID string, actionID string) (bool, error)
+	DiscardFileChange(ctx context.Context, filePath string, staged bool, path *string) (bool, error)
 }
 type QueryResolver interface {
 	Bean(ctx context.Context, id string) (*bean.Bean, error)
@@ -799,6 +801,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.DeleteBean(childComplexity, args["id"].(string)), true
+	case "Mutation.discardFileChange":
+		if e.complexity.Mutation.DiscardFileChange == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_discardFileChange_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DiscardFileChange(childComplexity, args["filePath"].(string), args["staged"].(bool), args["path"].(*string)), true
 	case "Mutation.executeAgentAction":
 		if e.complexity.Mutation.ExecuteAgentAction == nil {
 			break
@@ -1511,6 +1524,27 @@ func (ec *executionContext) field_Mutation_deleteBean_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_discardFileChange_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filePath", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["filePath"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "staged", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["staged"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "path", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["path"] = arg2
 	return args, nil
 }
 
@@ -5411,6 +5445,47 @@ func (ec *executionContext) fieldContext_Mutation_executeAgentAction(ctx context
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_executeAgentAction_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_discardFileChange(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_discardFileChange,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DiscardFileChange(ctx, fc.Args["filePath"].(string), fc.Args["staged"].(bool), fc.Args["path"].(*string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_discardFileChange(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_discardFileChange_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10186,6 +10261,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "executeAgentAction":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_executeAgentAction(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "discardFileChange":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_discardFileChange(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
