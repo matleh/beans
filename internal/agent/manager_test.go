@@ -800,6 +800,92 @@ func TestBuildClaudeArgs_ActOverridesPlan(t *testing.T) {
 	}
 }
 
+func TestBuildClaudeArgs_Model(t *testing.T) {
+	args := buildClaudeArgs(&Session{Model: "opus"})
+	found := false
+	for i, a := range args {
+		if a == "--model" && i+1 < len(args) && args[i+1] == "opus" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected --model opus in args, got %v", args)
+	}
+}
+
+func TestBuildClaudeArgs_NoModel(t *testing.T) {
+	args := buildClaudeArgs(&Session{})
+	for _, a := range args {
+		if a == "--model" {
+			t.Errorf("expected no --model flag when model is empty, got %v", args)
+		}
+	}
+}
+
+func TestSetModel_CreatesSession(t *testing.T) {
+	m := NewManager("", nil)
+	err := m.SetModel("test-bean", "opus")
+	if err != nil {
+		t.Fatalf("SetModel: %v", err)
+	}
+
+	snap := m.GetSession("test-bean")
+	if snap == nil {
+		t.Fatal("expected session to exist")
+	}
+	if snap.Model != "opus" {
+		t.Errorf("expected model 'opus', got %q", snap.Model)
+	}
+}
+
+func TestSetModel_UpdatesExisting(t *testing.T) {
+	m := NewManager("", nil)
+	m.mu.Lock()
+	m.sessions["test-bean"] = &Session{
+		ID:           "test-bean",
+		Model:        "sonnet",
+		streamingIdx: -1,
+	}
+	m.mu.Unlock()
+
+	err := m.SetModel("test-bean", "haiku")
+	if err != nil {
+		t.Fatalf("SetModel: %v", err)
+	}
+
+	snap := m.GetSession("test-bean")
+	if snap.Model != "haiku" {
+		t.Errorf("expected model 'haiku', got %q", snap.Model)
+	}
+}
+
+func TestSetModel_NoopWhenSame(t *testing.T) {
+	m := NewManager("", nil)
+	m.mu.Lock()
+	m.sessions["test-bean"] = &Session{
+		ID:           "test-bean",
+		Model:        "opus",
+		streamingIdx: -1,
+	}
+	m.mu.Unlock()
+
+	ch := m.Subscribe("test-bean")
+
+	// Set the same model — should be a no-op (no notification)
+	err := m.SetModel("test-bean", "opus")
+	if err != nil {
+		t.Fatalf("SetModel: %v", err)
+	}
+
+	select {
+	case <-ch:
+		t.Error("expected no notification when model unchanged")
+	default:
+		// expected
+	}
+}
+
 func TestGlobalSubscribeUnsubscribe(t *testing.T) {
 	m := NewManager("", nil)
 	ch := m.SubscribeGlobal()

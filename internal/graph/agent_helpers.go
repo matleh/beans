@@ -94,6 +94,11 @@ func agentSessionToModel(s *agent.Session) *model.AgentSession {
 		sysStatus = &s.SystemStatus
 	}
 
+	var mdl *string
+	if s.Model != "" {
+		mdl = &s.Model
+	}
+
 	var workDir *string
 	if s.WorkDir != "" {
 		workDir = &s.WorkDir
@@ -115,6 +120,7 @@ func agentSessionToModel(s *agent.Session) *model.AgentSession {
 		Status:             status,
 		Messages:           msgs,
 		Error:              errPtr,
+		Model:              mdl,
 		PlanMode:           s.PlanMode,
 		ActMode:            s.ActMode,
 		SystemStatus:       sysStatus,

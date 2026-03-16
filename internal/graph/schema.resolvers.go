@@ -609,7 +609,7 @@ func (r *mutationResolver) RemoveWorktree(ctx context.Context, id string) (bool,
 }
 
 // SendAgentMessage is the resolver for the sendAgentMessage field.
-func (r *mutationResolver) SendAgentMessage(ctx context.Context, beanID string, message string, images []*model.ImageInput) (bool, error) {
+func (r *mutationResolver) SendAgentMessage(ctx context.Context, beanID string, message string, images []*model.ImageInput, model *string) (bool, error) {
 	if r.AgentMgr == nil {
 		return false, fmt.Errorf("agent manager not available")
 	}
@@ -634,6 +634,13 @@ func (r *mutationResolver) SendAgentMessage(ctx context.Context, beanID string, 
 			return false, fmt.Errorf("invalid base64 image data: %w", err)
 		}
 		uploads = append(uploads, agent.ImageUpload{Data: data, MediaType: img.MediaType})
+	}
+
+	// Apply model override if provided
+	if model != nil {
+		if err := r.AgentMgr.SetModel(beanID, *model); err != nil {
+			return false, err
+		}
 	}
 
 	if err := r.AgentMgr.SendMessage(beanID, workDir, message, uploads); err != nil {
@@ -670,6 +677,17 @@ func (r *mutationResolver) SetAgentActMode(ctx context.Context, beanID string, a
 		return false, fmt.Errorf("agent manager not available")
 	}
 	if err := r.AgentMgr.SetActMode(beanID, actMode); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// SetAgentModel is the resolver for the setAgentModel field.
+func (r *mutationResolver) SetAgentModel(ctx context.Context, beanID string, model string) (bool, error) {
+	if r.AgentMgr == nil {
+		return false, fmt.Errorf("agent manager not available")
+	}
+	if err := r.AgentMgr.SetModel(beanID, model); err != nil {
 		return false, err
 	}
 	return true, nil

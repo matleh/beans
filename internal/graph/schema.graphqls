@@ -218,7 +218,7 @@ type Mutation {
   Send a message to the agent in a worktree. Starts a session if none exists.
   Optionally attach images (base64-encoded).
   """
-  sendAgentMessage(beanId: ID!, message: String!, images: [ImageInput!]): Boolean!
+  sendAgentMessage(beanId: ID!, message: String!, images: [ImageInput!], model: String): Boolean!
 
   """
   Stop the running agent in a worktree.
@@ -237,6 +237,12 @@ type Mutation {
   (no permission prompts). Kills any running process since the flag requires respawning.
   """
   setAgentActMode(beanId: ID!, actMode: Boolean!): Boolean!
+
+  """
+  Set the Claude model for an agent session. Takes effect on the next process spawn.
+  Use short names like "sonnet", "opus", "haiku". Empty string clears the override (uses CLI default).
+  """
+  setAgentModel(beanId: ID!, model: String!): Boolean!
 
   """
   Set a pending interaction on an agent session (creates session if needed).
@@ -578,6 +584,8 @@ type AgentSession {
   messages: [AgentMessage!]!
   "Last error message, if any"
   error: String
+  "Claude model override (e.g. 'sonnet', 'opus', 'haiku'), null when using CLI default"
+  model: String
   "Whether the agent is in plan mode (read-only)"
   planMode: Boolean!
   "Whether the agent is in act mode (fully autonomous, no permission prompts)"

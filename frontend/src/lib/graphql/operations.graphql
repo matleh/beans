@@ -47,6 +47,7 @@ fragment AgentSessionFields on AgentSession {
     diff
   }
   error
+  model
   planMode
   actMode
   systemStatus
@@ -241,8 +242,8 @@ mutation RemoveWorktree($id: ID!) {
   removeWorktree(id: $id)
 }
 
-mutation SendAgentMessage($beanId: ID!, $message: String!, $images: [ImageInput!]) {
-  sendAgentMessage(beanId: $beanId, message: $message, images: $images)
+mutation SendAgentMessage($beanId: ID!, $message: String!, $images: [ImageInput!], $model: String) {
+  sendAgentMessage(beanId: $beanId, message: $message, images: $images, model: $model)
 }
 
 mutation StopAgent($beanId: ID!) {
@@ -255,6 +256,10 @@ mutation SetAgentPlanMode($beanId: ID!, $planMode: Boolean!) {
 
 mutation SetAgentActMode($beanId: ID!, $actMode: Boolean!) {
   setAgentActMode(beanId: $beanId, actMode: $actMode)
+}
+
+mutation SetAgentModel($beanId: ID!, $model: String!) {
+  setAgentModel(beanId: $beanId, model: $model)
 }
 
 mutation ClearAgentSession($beanId: ID!) {

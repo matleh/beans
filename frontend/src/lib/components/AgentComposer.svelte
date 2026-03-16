@@ -9,11 +9,13 @@
     isRunning: boolean;
     hasMessages: boolean;
     agentMode: 'plan' | 'act';
+    model: string;
     systemStatus: string | null;
     subagentActivities: SubagentActivity[];
     onSend: (message: string, images?: { data: string; mediaType: string }[]) => void;
     onStop: () => void;
     onSetMode: (mode: 'plan' | 'act') => void;
+    onSetModel: (model: string) => void;
     onCompact: () => void;
     onClear: () => void;
   }
@@ -23,14 +25,18 @@
     isRunning,
     hasMessages,
     agentMode,
+    model,
     systemStatus,
     subagentActivities,
     onSend,
     onStop,
     onSetMode,
+    onSetModel,
     onCompact,
     onClear
   }: Props = $props();
+
+  const effectiveModel = $derived(model || 'sonnet');
 
   const inputStorageKey = $derived(`agent-chat-input:${beanId}`);
   let inputText = $state('');
@@ -245,8 +251,50 @@
     </div>
   {/if}
 
-  <!-- Mode toggle + Clear -->
+  <!-- Model selector + Mode toggle + Clear -->
   <div class="flex items-center gap-3 pt-2">
+    <div class={['flex', isRunning && 'pointer-events-none opacity-50']}>
+      <button
+        onclick={() => onSetModel('sonnet')}
+        disabled={isRunning}
+        class={[
+          'btn-tab-sm cursor-pointer rounded-l',
+          effectiveModel === 'sonnet'
+            ? 'border-accent/30 bg-accent/10 text-accent'
+            : 'btn-tab-sm-inactive'
+        ]}
+      >
+        <span class="icon-[uil--bolt] size-3"></span>
+        Sonnet
+      </button>
+      <button
+        onclick={() => onSetModel('opus')}
+        disabled={isRunning}
+        class={[
+          'btn-tab-sm cursor-pointer border-l-0',
+          effectiveModel === 'opus'
+            ? 'border-accent/30 bg-accent/10 text-accent'
+            : 'btn-tab-sm-inactive'
+        ]}
+      >
+        <span class="icon-[uil--star] size-3"></span>
+        Opus
+      </button>
+      <button
+        onclick={() => onSetModel('haiku')}
+        disabled={isRunning}
+        class={[
+          'btn-tab-sm cursor-pointer rounded-r border-l-0',
+          effectiveModel === 'haiku'
+            ? 'border-accent/30 bg-accent/10 text-accent'
+            : 'btn-tab-sm-inactive'
+        ]}
+      >
+        <span class="icon-[uil--wind] size-3"></span>
+        Haiku
+      </button>
+    </div>
+
     <div class={['flex', isRunning && 'pointer-events-none opacity-50']}>
       <button
         onclick={() => onSetMode('plan')}

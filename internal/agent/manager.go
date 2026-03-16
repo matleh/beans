@@ -420,6 +420,37 @@ func (m *Manager) SetActMode(beanID string, actMode bool) error {
 	return nil
 }
 
+// SetModel sets the Claude model override for a session. The new model takes
+// effect the next time a process is spawned.
+func (m *Manager) SetModel(beanID string, model string) error {
+	m.mu.Lock()
+	session, hasSession := m.sessions[beanID]
+	if !hasSession {
+		session = &Session{
+			ID:           beanID,
+			AgentType:    "claude",
+			Status:       StatusIdle,
+			Model:        model,
+			streamingIdx: -1,
+		}
+		m.sessions[beanID] = session
+		m.mu.Unlock()
+		m.notify(beanID)
+		return nil
+	}
+
+	if session.Model == model {
+		m.mu.Unlock()
+		return nil
+	}
+
+	session.Model = model
+	m.mu.Unlock()
+
+	m.notify(beanID)
+	return nil
+}
+
 // SetPendingInteraction sets a pending interaction on a session, creating the
 // session if it doesn't exist. Used for testing the plan approval UI.
 func (m *Manager) SetPendingInteraction(beanID string, interaction *PendingInteraction) error {

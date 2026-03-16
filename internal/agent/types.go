@@ -101,6 +101,7 @@ type Session struct {
 	Messages  []Message
 	Error     string // last error message, if status == error
 	WorkDir   string // worktree filesystem path
+	Model    string // claude model override (e.g. "sonnet", "opus", "haiku"); empty = CLI default
 	PlanMode bool // when true, agent uses --permission-mode plan (read-only)
 	ActMode  bool // when true, agent uses --dangerously-skip-permissions (fully autonomous)
 	SystemStatus string // transient system status (e.g. "compacting"), empty when idle
@@ -135,6 +136,7 @@ func (s *Session) snapshot() Session {
 		Messages:           make([]Message, len(s.Messages)),
 		Error:              s.Error,
 		WorkDir:            s.WorkDir,
+		Model:              s.Model,
 		PlanMode:           s.PlanMode,
 		ActMode:           s.ActMode,
 		SystemStatus:       s.SystemStatus,

@@ -804,6 +804,9 @@ func buildClaudeArgs(session *Session) []string {
 		"--include-partial-messages",
 		"--disallowedTools", "EnterWorktree", "ExitWorktree",
 	}
+	if session.Model != "" {
+		args = append(args, "--model", session.Model)
+	}
 	if session.ActMode {
 		args = append(args, "--dangerously-skip-permissions")
 	} else if session.PlanMode {
