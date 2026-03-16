@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -804,6 +805,40 @@ func (r *mutationResolver) DiscardFileChange(ctx context.Context, filePath strin
 	if err := gitutil.DiscardFileChange(dir, filePath, staged); err != nil {
 		return false, err
 	}
+	return true, nil
+}
+
+// OpenInEditor is the resolver for the openInEditor field.
+func (r *mutationResolver) OpenInEditor(ctx context.Context, workspaceID string) (bool, error) {
+	var dir string
+	if workspaceID == CentralSessionID {
+		dir = r.ProjectRoot
+	} else {
+		if r.WorktreeMgr == nil {
+			return false, fmt.Errorf("worktree support not available")
+		}
+		wts, err := r.WorktreeMgr.List()
+		if err != nil {
+			return false, err
+		}
+		for _, wt := range wts {
+			if wt.ID == workspaceID {
+				dir = wt.Path
+				break
+			}
+		}
+		if dir == "" {
+			return false, fmt.Errorf("worktree not found: %s", workspaceID)
+		}
+	}
+
+	cmd := exec.Command("code", dir)
+	if err := cmd.Start(); err != nil {
+		return false, fmt.Errorf("failed to open editor: %w", err)
+	}
+	// Don't wait for the process — VS Code detaches itself
+	go cmd.Wait()
+
 	return true, nil
 }
 

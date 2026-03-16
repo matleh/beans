@@ -285,6 +285,12 @@ type Mutation {
   If path is null, operates on the project root.
   """
   discardFileChange(filePath: String!, staged: Boolean!, path: String): Boolean!
+
+  """
+  Open a workspace directory in VS Code. For the main workspace, opens the
+  project root. For worktrees, opens the worktree directory.
+  """
+  openInEditor(workspaceId: ID!): Boolean!
 }
 
 """

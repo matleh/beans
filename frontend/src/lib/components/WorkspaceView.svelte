@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AgentChatStore } from '$lib/agentChat.svelte';
-  import { WriteTerminalInputDocument } from '$lib/graphql/generated';
+  import { WriteTerminalInputDocument, OpenInEditorDocument } from '$lib/graphql/generated';
   import { changesStore } from '$lib/changes.svelte';
   import { configStore } from '$lib/config.svelte';
   import { client } from '$lib/graphqlClient';
@@ -30,6 +30,10 @@
         data: configStore.worktreeRunCommand + '\n'
       })
       .toPromise();
+  }
+
+  async function handleOpenInEditor() {
+    await client.mutation(OpenInEditorDocument, { workspaceId: worktreeId }).toPromise();
   }
 
   interface Props {
@@ -128,6 +132,14 @@
         Run
       </button>
     {/if}
+    <button
+      class="btn-toggle btn-toggle-inactive ml-1 cursor-pointer"
+      title="Open in VS Code"
+      onclick={handleOpenInEditor}
+    >
+      <span class="icon-[simple-icons--visualstudiocode] size-4"></span>
+      VS Code
+    </button>
     {#snippet right()}
       <AgentActions beanId={worktreeId} {agentBusy} onExecute={() => scrollToBottomTrigger++} />
       {#if isWorktree}
