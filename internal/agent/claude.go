@@ -817,6 +817,9 @@ func buildClaudeArgs(session *Session) []string {
 	} else if session.PlanMode {
 		args = append(args, "--permission-mode", "plan")
 	}
+	if session.SystemPrompt != "" {
+		args = append(args, "--append-system-prompt", session.SystemPrompt)
+	}
 	if session.SessionID != "" {
 		args = append(args, "--resume", session.SessionID)
 	}

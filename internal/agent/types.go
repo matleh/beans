@@ -100,11 +100,12 @@ type Session struct {
 	Status    SessionStatus // idle, running, error
 	Messages  []Message
 	Error     string // last error message, if status == error
-	WorkDir   string // worktree filesystem path
-	Effort   string // thinking effort level (e.g. "low", "medium", "high", "max"); empty = CLI default
-	PlanMode bool // when true, agent uses --permission-mode plan (read-only)
-	ActMode  bool // when true, agent uses --dangerously-skip-permissions (fully autonomous)
+	WorkDir      string // worktree filesystem path
+	Effort       string // thinking effort level (e.g. "low", "medium", "high", "max"); empty = CLI default
+	PlanMode     bool   // when true, agent uses --permission-mode plan (read-only)
+	ActMode      bool   // when true, agent uses --dangerously-skip-permissions (fully autonomous)
 	SystemStatus string // transient system status (e.g. "compacting"), empty when idle
+	SystemPrompt string // appended to the default system prompt via --append-system-prompt
 
 	// ToolInvocations tracks structured tool calls in the current turn.
 	// Reset on each new user message. Used to find plan files, etc.

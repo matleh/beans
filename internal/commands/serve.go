@@ -189,6 +189,21 @@ func runServer(port int, origins []string) error {
 	}, agent.DefaultMode(cfg.GetDefaultMode()))
 	defer agentMgr.Shutdown()
 
+	// Inject a system prompt that tells the agent which worktree/directory it's in.
+	// This is separate from context (which goes in the first user message) because
+	// the system prompt persists across --resume, ensuring the agent always knows
+	// its workspace identity.
+	agentMgr.SetSystemPromptProvider(func(beanID string) string {
+		if beanID == graph.CentralSessionID {
+			return fmt.Sprintf("You are the central planning agent for the beans project. Your working directory is the main repository at: %s", filepath.Dir(core.Root()))
+		}
+		wtPath := wtManager.WorktreePath(beanID)
+		if wtPath == "" {
+			return ""
+		}
+		return fmt.Sprintf("You are a workspace agent working in a git worktree. Your worktree ID is %q and your working directory is: %s\nAll file modifications MUST be within this directory. NEVER modify files in the main repository or other worktrees.\nNEVER force-push to main. NEVER push to origin/main. The Integrate action is local-only.", beanID, wtPath)
+	})
+
 	// Post an info message to the workspace's agent chat when setup finishes.
 	wtManager.SetOnSetupDone(func(worktreeID string, success bool, output string) {
 		if success {

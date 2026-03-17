@@ -220,6 +220,12 @@ var agentActions = []agentActionDef{
 		PromptFunc: func(ctx actionContext) string {
 			return fmt.Sprintf(`Squash-merge this worktree's work into main. All commits from this branch must be combined into a single commit on main. Follow these steps in order:
 
+CRITICAL SAFETY RULES — READ BEFORE DOING ANYTHING:
+- NEVER run "git push" to origin/main or any remote. This is a LOCAL-ONLY operation.
+- NEVER run "git push --force" or "git push -f" on ANY branch, especially not main.
+- NEVER run any push command that targets the main branch on any remote.
+- If something goes wrong, STOP and report the error. Do NOT attempt destructive recovery.
+
 1. If there are associated beans, mark them as completed.
 2. If there are uncommitted changes, create a commit (following the usual commit guidelines).
 3. Squash-merge onto main:
@@ -230,7 +236,9 @@ var agentActions = []agentActionDef{
    d. Fast-forward main to the squashed commit (this updates main's ref, index, AND working tree):
       git -C %s merge --ff-only $SQUASH_SHA
    e. If the merge fails (e.g. main moved), go back to step (a) and retry.
-4. Reset this branch to main so it doesn't appear to diverge: git reset --hard main`, ctx.MainRepoPath)
+4. Reset this branch to main so it doesn't appear to diverge: git reset --hard main
+
+REMINDER: Do NOT push anything to any remote. The integrate action is purely local.`, ctx.MainRepoPath)
 		},
 		Visible: func(ctx actionContext) bool {
 			return ctx.HasChanges || ctx.HasNewCommits
