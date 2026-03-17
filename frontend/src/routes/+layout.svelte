@@ -65,7 +65,10 @@
   });
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head>
+  <title>{configStore.projectName ? `${configStore.projectName} — Beans UI` : 'Beans UI'}</title>
+  <link rel="icon" href={favicon} />
+</svelte:head>
 
 <div class="flex h-screen flex-col bg-surface-alt">
   {#if beansStore.error}
