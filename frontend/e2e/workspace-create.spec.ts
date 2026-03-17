@@ -81,12 +81,12 @@ test.describe('Workspace creation', () => {
     await expect(activeLabel).toBeVisible({ timeout: 5_000 });
     const wsName = await activeLabel.textContent();
 
-    // Hover over the workspace to reveal the destroy button
-    const wsButton = sidebar.locator('button.font-medium').filter({ hasText: wsName! });
-    await wsButton.hover();
+    // Hover over the workspace card to reveal the destroy button
+    const wsCard = sidebar.locator('div.rounded-md').filter({ hasText: wsName! });
+    await wsCard.hover();
 
     // Click the destroy button (archive icon)
-    const destroyButton = wsButton.getByRole('button', { name: 'Destroy worktree' });
+    const destroyButton = wsCard.getByRole('button', { name: 'Destroy worktree' });
     await expect(destroyButton).toBeVisible({ timeout: 2_000 });
     await destroyButton.click();
 

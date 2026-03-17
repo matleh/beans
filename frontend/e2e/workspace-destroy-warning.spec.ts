@@ -19,10 +19,10 @@ async function createWorkspace(page: import('@playwright/test').Page) {
  */
 async function openDestroyModal(page: import('@playwright/test').Page, wsName: string) {
   const sidebar = page.locator('nav');
-  const wsButton = sidebar.locator('button.font-medium').filter({ hasText: wsName });
-  await wsButton.hover();
+  const wsCard = sidebar.locator('div.rounded-md').filter({ hasText: wsName });
+  await wsCard.hover();
 
-  const destroyButton = wsButton.getByRole('button', { name: 'Destroy worktree' });
+  const destroyButton = wsCard.getByRole('button', { name: 'Destroy worktree' });
   await expect(destroyButton).toBeVisible({ timeout: 2_000 });
   await destroyButton.click();
 }

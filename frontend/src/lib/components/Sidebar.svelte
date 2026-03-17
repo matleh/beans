@@ -204,27 +204,26 @@
               : 'border-border/50 bg-surface/50 hover:border-border hover:bg-surface'
           ]}
         >
-          <div
-            onclick={() => ui.navigateTo(item.id)}
-            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ui.navigateTo(item.id); } }}
-            role="button"
-            tabindex="0"
-            class={[
-              'group flex w-full min-w-0 cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
-              ui.activeView === item.id
-                ? 'font-medium text-text'
-                : 'text-text-muted hover:text-text'
-            ]}
-          >
-            <div class="min-w-0 flex-1">
-              <span class="block truncate">{item.label}</span>
-              {#if item.settingUp}
-                <span class="block text-xs font-normal text-text-faint animate-pulse">Setting up...</span>
-              {:else if item.description}
-                <span class="block text-xs font-normal text-text-faint" use:decryptText={{ text: item.description, immediate: isWorkspaceSeen(item.id) }}></span>
-              {/if}
-            </div>
-            <div class="relative ml-auto h-4 w-4 shrink-0 self-start mt-0.5">
+          <div class="group flex items-center">
+            <button
+              onclick={() => ui.navigateTo(item.id)}
+              class={[
+                'flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
+                ui.activeView === item.id
+                  ? 'font-medium text-text'
+                  : 'text-text-muted hover:text-text'
+              ]}
+            >
+              <div class="min-w-0 flex-1">
+                <span class="block truncate">{item.label}</span>
+                {#if item.settingUp}
+                  <span class="block text-xs font-normal text-text-faint animate-pulse">Setting up...</span>
+                {:else if item.description}
+                  <span class="block text-xs font-normal text-text-faint" use:decryptText={{ text: item.description, immediate: isWorkspaceSeen(item.id) }}></span>
+                {/if}
+              </div>
+            </button>
+            <div class="relative mr-2 h-4 w-4 shrink-0">
               {#if agentStatusesStore.isRunning(item.id)}
                 <div class="loader absolute inset-0" transition:fade={{ duration: 200 }}></div>
               {:else if item.id === MAIN_WORKSPACE_ID && mainHasChanges}
@@ -232,10 +231,7 @@
               {:else if item.id !== MAIN_WORKSPACE_ID && readyWorktreeIds.has(item.id)}
                 <span class="icon-[uil--check] absolute inset-0 block size-4 text-success group-hover:hidden" title="Ready to integrate"></span>
                 <button
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    promptDestroy(item.id);
-                  }}
+                  onclick={() => promptDestroy(item.id)}
                   class="absolute inset-0 hidden cursor-pointer items-center justify-center rounded text-text-faint transition-opacity hover:text-danger group-hover:flex"
                   aria-label="Destroy worktree"
                 >
@@ -243,10 +239,7 @@
                 </button>
               {:else if item.id !== MAIN_WORKSPACE_ID}
                 <button
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    promptDestroy(item.id);
-                  }}
+                  onclick={() => promptDestroy(item.id)}
                   class="absolute inset-0 flex cursor-pointer items-center justify-center rounded text-text-faint opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
                   aria-label="Destroy worktree"
                 >
