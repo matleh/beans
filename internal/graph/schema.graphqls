@@ -111,6 +111,13 @@ type Query {
   Defaults to "local".
   """
   worktreeIntegrateMode: String!
+
+  """
+  List files tracked by git in a workspace directory.
+  Performs case-insensitive substring matching — space-separated terms must all
+  match somewhere in the file path. Used for @-mention autocomplete.
+  """
+  listFiles(workspaceId: ID, prefix: String!, limit: Int): [FileEntry!]!
 }
 
 type Subscription {
@@ -269,7 +276,7 @@ type Mutation {
   Send a message to the agent in a worktree. Starts a session if none exists.
   Optionally attach images (base64-encoded).
   """
-  sendAgentMessage(beanId: ID!, message: String!, images: [ImageInput!]): Boolean!
+  sendAgentMessage(beanId: ID!, message: String!, images: [ImageInput!], attachments: [FileAttachmentInput!]): Boolean!
 
   """
   Stop the running agent in a worktree.
@@ -762,6 +769,8 @@ type AgentMessage {
   content: String!
   "Attached images (empty for assistant/tool messages)"
   images: [AgentMessageImage!]!
+  "File/directory paths attached via @-mention (only present on user messages)"
+  attachments: [String!]!
   "Unified diff output (only present on tool messages for Write/Edit tools)"
   diff: String
 }
@@ -784,6 +793,22 @@ input ImageInput {
   data: String!
   "MIME type (image/jpeg, image/png, image/gif, image/webp)"
   mediaType: String!
+}
+
+"""
+A file entry in the project, used for @-mention autocomplete.
+"""
+type FileEntry {
+  "Relative path from the workspace root"
+  path: String!
+}
+
+"""
+Input for attaching a file or directory as context to an agent message.
+"""
+input FileAttachmentInput {
+  "Relative file or directory path"
+  path: String!
 }
 
 """

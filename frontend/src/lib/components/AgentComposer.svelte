@@ -3,12 +3,16 @@
   import { Editor, Extension } from '@tiptap/core';
   import StarterKit from '@tiptap/starter-kit';
   import Placeholder from '@tiptap/extension-placeholder';
+  import { FileMention } from '$lib/tiptap/FileMentionNode';
+  import { ListFilesDocument } from '$lib/graphql/generated';
+  import { client } from '$lib/graphqlClient';
 
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
   interface Props {
     beanId: string;
+    workspaceId: string;
     isRunning: boolean;
     hasMessages: boolean;
     agentMode: 'plan' | 'act';
@@ -16,7 +20,7 @@
     systemStatus: string | null;
     subagentActivities: SubagentActivity[];
     quickReplies: string[];
-    onSend: (message: string, images?: { data: string; mediaType: string }[]) => void;
+    onSend: (message: string, images?: { data: string; mediaType: string }[], attachments?: { path: string }[]) => void;
     onStop: () => void;
     onSetMode: (mode: 'plan' | 'act') => void;
     onSetEffort: (effort: string) => void;
@@ -26,6 +30,7 @@
 
   let {
     beanId,
+    workspaceId,
     isRunning,
     hasMessages,
     agentMode,
@@ -43,32 +48,193 @@
 
   const inputStorageKey = $derived(`agent-chat-input:${beanId}`);
   let inputText = $state('');
+  let hasAttachments = $state(false);
   let pendingImages = $state<{ data: string; mediaType: string; preview: string }[]>([]);
   let isDragging = $state(false);
   let fileInputEl: HTMLInputElement | undefined = $state();
   let editorEl: HTMLDivElement | undefined = $state();
   let editor: Editor | undefined = $state();
 
-  // Create a tiptap extension for keyboard shortcuts that need access to component state.
-  // We use closures so the handlers always read the latest reactive values.
+  // @-mention autocomplete state
+  let showMention = $state(false);
+  let mentionResults = $state<{ path: string }[]>([]);
+  let mentionSelectedIndex = $state(0);
+  let mentionStartPos = $state(-1); // ProseMirror position of the @
+  // Full file list fetched once per mention session, filtered client-side
+  let allFiles: { path: string }[] = [];
+  let allFilesLoaded = false;
+
+  const MIN_QUERY_LENGTH = 2; // Don't fetch until user types at least this many chars
+
+  function closeMention() {
+    showMention = false;
+    mentionResults = [];
+    mentionSelectedIndex = 0;
+    mentionStartPos = -1;
+    allFiles = [];
+    allFilesLoaded = false;
+  }
+
+  function filterFiles(query: string) {
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) {
+      mentionResults = allFiles.slice(0, 50);
+    } else {
+      const filtered: typeof allFiles = [];
+      for (const file of allFiles) {
+        const lower = file.path.toLowerCase();
+        if (terms.every(t => lower.includes(t))) {
+          filtered.push(file);
+          if (filtered.length >= 50) break;
+        }
+      }
+      mentionResults = filtered;
+    }
+    mentionSelectedIndex = 0;
+  }
+
+  async function fetchAllFiles() {
+    if (allFilesLoaded) return;
+    const result = await client.query(ListFilesDocument, {
+      workspaceId,
+      prefix: '',
+      limit: null
+    }, { requestPolicy: 'network-only' }).toPromise();
+    if (result.data?.listFiles) {
+      allFiles = result.data.listFiles;
+      allFilesLoaded = true;
+    }
+  }
+
+  function scrollSelectedIntoView() {
+    const container = document.querySelector('[data-mention-list]');
+    const selected = container?.querySelector('[data-selected]');
+    selected?.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Detect @-mention triggers using ProseMirror positions directly.
+  // This avoids text-index math that breaks with inline atom nodes.
+  function handleMentionDetection(e: Editor) {
+    const { from } = e.state.selection;
+
+    if (showMention) {
+      if (from <= mentionStartPos) {
+        closeMention();
+        return;
+      }
+      // Verify the @ is still at the stored position
+      const charAtStart = e.state.doc.textBetween(mentionStartPos, mentionStartPos + 1);
+      if (charAtStart !== '@') {
+        closeMention();
+        return;
+      }
+      const query = e.state.doc.textBetween(mentionStartPos + 1, from);
+      if (query.length < MIN_QUERY_LENGTH) {
+        mentionResults = [];
+        return;
+      }
+      if (!allFilesLoaded) {
+        // First time reaching the threshold — fetch the full list, then filter
+        fetchAllFiles().then(() => filterFiles(query));
+      } else {
+        filterFiles(query);
+      }
+    } else {
+      if (from > 1) {
+        const charBefore = e.state.doc.textBetween(from - 1, from);
+        if (charBefore === '@') {
+          const charBeforeThat = from > 2 ? e.state.doc.textBetween(from - 2, from - 1) : '';
+          if (!charBeforeThat || /\s/.test(charBeforeThat)) {
+            mentionStartPos = from - 1;
+            showMention = true;
+          }
+        }
+      }
+    }
+  }
+
+  function selectMentionItem(item: { path: string }) {
+    if (!editor) return;
+
+    const { from } = editor.state.selection;
+
+    // Replace @query with an inline fileMention node
+    editor.chain()
+      .deleteRange({ from: mentionStartPos, to: from })
+      .insertContentAt(mentionStartPos, [
+        { type: 'fileMention', attrs: { path: item.path } },
+        { type: 'text', text: ' ' }
+      ])
+      .run();
+
+    closeMention();
+    editor.commands.focus();
+  }
+
+  // Extract all fileMention nodes from the editor document
+  function extractAttachments(e: Editor): { path: string }[] {
+    const attachments: { path: string }[] = [];
+    const seen = new Set<string>();
+    e.state.doc.descendants((node) => {
+      if (node.type.name === 'fileMention' && node.attrs.path && !seen.has(node.attrs.path)) {
+        seen.add(node.attrs.path);
+        attachments.push({ path: node.attrs.path });
+      }
+    });
+    return attachments;
+  }
+
+  // TipTap extension for keyboard shortcuts (closures read latest reactive state)
   function createComposerKeymap() {
     return Extension.create({
       name: 'composerKeymap',
       addKeyboardShortcuts() {
         return {
+          ArrowDown: () => {
+            if (showMention && mentionResults.length > 0) {
+              mentionSelectedIndex = (mentionSelectedIndex + 1) % mentionResults.length;
+              setTimeout(scrollSelectedIntoView, 0);
+              return true;
+            }
+            return false;
+          },
+          ArrowUp: () => {
+            if (showMention && mentionResults.length > 0) {
+              mentionSelectedIndex = (mentionSelectedIndex - 1 + mentionResults.length) % mentionResults.length;
+              setTimeout(scrollSelectedIntoView, 0);
+              return true;
+            }
+            return false;
+          },
           Enter: () => {
+            if (showMention && mentionResults.length > 0) {
+              selectMentionItem(mentionResults[mentionSelectedIndex]);
+              return true;
+            }
             send();
             return true;
+          },
+          Tab: () => {
+            if (showMention && mentionResults.length > 0) {
+              selectMentionItem(mentionResults[mentionSelectedIndex]);
+              return true;
+            }
+            return false;
+          },
+          Escape: () => {
+            if (showMention) {
+              closeMention();
+              return true;
+            }
+            if (isRunning) {
+              onStop();
+              return true;
+            }
+            return false;
           },
           'Shift-Tab': () => {
             if (!isRunning) {
               onSetMode(agentMode === 'plan' ? 'act' : 'plan');
-            }
-            return true;
-          },
-          Escape: () => {
-            if (isRunning) {
-              onStop();
             }
             return true;
           }
@@ -77,7 +243,7 @@
     });
   }
 
-  // Initialize the tiptap editor when the DOM element is available
+  // Initialize TipTap editor
   $effect(() => {
     if (!editorEl) return;
 
@@ -87,7 +253,6 @@
       element: editorEl,
       extensions: [
         StarterKit.configure({
-          // Disable features we don't need in a chat composer
           heading: false,
           blockquote: false,
           codeBlock: false,
@@ -99,6 +264,7 @@
         Placeholder.configure({
           placeholder: 'Send a message...'
         }),
+        FileMention,
         createComposerKeymap()
       ],
       content: initialContent ? `<p>${initialContent.replace(/\n/g, '<br>')}</p>` : '',
@@ -115,13 +281,14 @@
             const file = item.getAsFile();
             if (file) addImageFile(file);
           }
-          // If there's also text content, let tiptap handle the text paste
           const hasText = items.some((item) => item.type === 'text/plain');
           return !hasText;
         }
       },
       onUpdate: ({ editor: e }) => {
         inputText = e.getText();
+        hasAttachments = extractAttachments(e).length > 0;
+        handleMentionDetection(e);
       }
     });
 
@@ -207,17 +374,29 @@
   }
 
   function send() {
-    const text = inputText.trim();
-    if (!text && pendingImages.length === 0) return;
+    if (!editor) return;
+    // Serialize with inline markers for file mentions so they appear
+    // at the correct position in the displayed message
+    const text = editor.getText({
+      blockSeparator: '\n',
+      textSerializers: {
+        fileMention: ({ node }: { node: { attrs: { path: string } } }) =>
+          `{{file:${node.attrs.path}}}`
+      }
+    }).trim();
+    const attachments = extractAttachments(editor);
+    if (!text && pendingImages.length === 0 && attachments.length === 0) return;
     const images =
       pendingImages.length > 0
         ? pendingImages.map(({ data, mediaType }) => ({ data, mediaType }))
         : undefined;
     for (const img of pendingImages) URL.revokeObjectURL(img.preview);
     pendingImages = [];
+    hasAttachments = false;
     inputText = '';
-    editor?.commands.clearContent(true);
-    onSend(text, images);
+    editor.commands.clearContent(true);
+    closeMention();
+    onSend(text, images, attachments.length > 0 ? attachments : undefined);
   }
 </script>
 
@@ -261,6 +440,24 @@
     ondragleave={handleDragLeave}
     ondrop={handleDrop}
   >
+    {#if showMention && mentionResults.length > 0}
+      <div data-mention-list class="absolute bottom-full left-0 z-50 mb-1 max-h-48 w-full overflow-y-auto rounded border border-border bg-surface shadow-lg">
+        {#each mentionResults as item, i (item.path)}
+          <button
+            type="button"
+            data-selected={i === mentionSelectedIndex ? '' : undefined}
+            class={[
+              'flex w-full cursor-pointer items-center gap-2 px-2 py-1 text-left text-xs',
+              i === mentionSelectedIndex ? 'bg-accent/10 text-accent' : 'text-text-muted hover:bg-surface-alt'
+            ]}
+            onmousedown={(e) => { e.preventDefault(); selectMentionItem(item); }}
+          >
+            <span class="icon-[uil--file] size-3.5 shrink-0"></span>
+            <span class="truncate">{item.path}</span>
+          </button>
+        {/each}
+      </div>
+    {/if}
     <div bind:this={editorEl} class="composer-editor-wrapper"></div>
     <div class="flex items-center gap-1 px-2 pb-1.5">
       <input
@@ -291,7 +488,7 @@
       {/if}
       <button
         onclick={send}
-        disabled={!inputText.trim() && pendingImages.length === 0}
+        disabled={!inputText.trim() && pendingImages.length === 0 && !hasAttachments}
         class="cursor-pointer rounded p-1 text-text-muted transition-colors hover:bg-surface hover:text-text
 					disabled:cursor-not-allowed disabled:opacity-30"
         aria-label="Send message"
@@ -468,5 +665,9 @@
     height: 0;
     color: var(--th-text-faint);
     content: attr(data-placeholder);
+  }
+
+  .composer-editor-wrapper :global(.file-mention-pill) {
+    user-select: all;
   }
 </style>

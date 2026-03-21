@@ -41,6 +41,8 @@ type AgentMessage struct {
 	Content string `json:"content"`
 	// Attached images (empty for assistant/tool messages)
 	Images []*AgentMessageImage `json:"images"`
+	// File/directory paths attached via @-mention (only present on user messages)
+	Attachments []string `json:"attachments"`
 	// Unified diff output (only present on tool messages for Write/Edit tools)
 	Diff *string `json:"diff,omitempty"`
 }
@@ -219,6 +221,12 @@ type CreateBeanInput struct {
 	Prefix *string `json:"prefix,omitempty"`
 }
 
+// Input for attaching a file or directory as context to an agent message.
+type FileAttachmentInput struct {
+	// Relative file or directory path
+	Path string `json:"path"`
+}
+
 // A changed file in a git working tree
 type FileChange struct {
 	// File path relative to the repo/worktree root
@@ -231,6 +239,12 @@ type FileChange struct {
 	Deletions int `json:"deletions"`
 	// Whether this change is staged
 	Staged bool `json:"staged"`
+}
+
+// A file entry in the project, used for @-mention autocomplete.
+type FileEntry struct {
+	// Relative path from the workspace root
+	Path string `json:"path"`
 }
 
 // Input for uploading an image attachment
